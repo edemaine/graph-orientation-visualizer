@@ -5,8 +5,8 @@ import {
   relationConstraint,
   symmetricConstraint,
   type GraphDefinition,
-} from "./model.civet";
-import { EXAMPLES } from "./examples.civet";
+} from "../src/model.civet";
+import { EXAMPLES } from "../src/examples.civet";
 
 const star: GraphDefinition = {
   id: "star",

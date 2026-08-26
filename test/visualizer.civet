@@ -1,0 +1,27 @@
+import { afterEach, describe, expect, it } from "vitest";
+import { render } from "solid-js/web";
+import { Visualizer } from "../src/Visualizer.civet";
+
+let dispose: (() => void) | undefined;
+
+afterEach(() => {
+  dispose?.();
+  dispose = undefined;
+});
+
+describe("example selection", () => {
+  it("replaces the title and SVG diagram when the selection changes", () => {
+    const root = document.createElement("div");
+    dispose = render(() => <Visualizer />, root);
+
+    const select = root.querySelector<HTMLSelectElement>("#example")!;
+    expect(root.querySelector("h2")?.textContent).toBe("Directed cycle");
+    expect(root.querySelectorAll(".edge-hit")).toHaveLength(4);
+
+    select.value = "one-in-four";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(root.querySelector("h2")?.textContent).toBe("1-in-4 simulation");
+    expect(root.querySelectorAll(".edge-hit")).toHaveLength(5);
+  });
+});

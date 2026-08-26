@@ -2,11 +2,11 @@ import { defineConfig } from "vitest/config";
 import solidPlugin from "vite-plugin-solid";
 import civetPlugin from "@danielx/civet/vite";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   base: "./",
   plugins: [
     civetPlugin({ ts: "preserve" }),
-    solidPlugin(),
+    solidPlugin({ hot: mode !== "test" }),
   ],
   server: {
     port: 3000,
@@ -20,6 +20,6 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["src/**/*.test.civet"],
+    include: ["test/**/*.civet"],
   },
-});
+}));

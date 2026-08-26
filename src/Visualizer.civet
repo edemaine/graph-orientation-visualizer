@@ -1,4 +1,4 @@
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, batch, createMemo, createSignal } from "solid-js";
 import { EXAMPLES } from "./examples.civet";
 import {
   type Edge,
@@ -133,9 +133,11 @@ export function Visualizer() {
 
   const chooseExample = (id: string) => {
     const graph = EXAMPLES.find((example) => example.id === id) ?? EXAMPLES[0];
-    setSelectedId(graph.id);
-    setDirections(emptyDirections(graph));
-    setHovered(null);
+    batch(() => {
+      setSelectedId(graph.id);
+      setDirections(emptyDirections(graph));
+      setHovered(null);
+    });
   };
 
   const setEdge = (edgeId: string, direction: EdgeDirection) => {
@@ -214,7 +216,7 @@ export function Visualizer() {
           <section>
             <label class="field-label" for="example">Example</label>
             <div class="select-wrap">
-              <select id="example" value={selectedId()} onInput={(event) => chooseExample(event.currentTarget.value)}>
+              <select id="example" value={selectedId()} onChange={(event) => chooseExample(event.currentTarget.value)}>
                 <For each={groups}>{(group) => (
                   <optgroup label={group}>
                     <For each={EXAMPLES.filter((example) => example.group === group)}>{(example) => (
@@ -290,8 +292,8 @@ export function Visualizer() {
               <g class="edge-layer">
                 <For each={selectedGraph().edges}>{(edge) => {
                   const geometry = () => { return edgeGeometry(selectedGraph(), edge); };
-                  const direction = () => { return directions()[edge.id]; };
-                  const forced = () => { return forcedEdges()[edge.id]; };
+                  const direction = () => { return directions()[edge.id] ?? null; };
+                  const forced = () => { return forcedEdges()[edge.id] ?? { direction: null, conflict: false }; };
                   const hover = () => { return hovered()?.edge === edge.id ? hovered()?.zone : undefined; };
                   return (
                     <g class={`edge-group${forced().conflict ? " edge-group--conflict" : ""}`}>
@@ -349,7 +351,13 @@ export function Visualizer() {
 
               <g class="vertex-layer">
                 <For each={selectedGraph().vertices}>{(vertex) => {
-                  const analysis = () => { return analyses()[vertex.id]; };
+                  const analysis = () => { return analyses()[vertex.id] ?? {
+                    state: "open" as const,
+                    compatible: [],
+                    forced: new Map<string, 0 | 1>(),
+                    assignedPorts: 0,
+                    totalPorts: 0,
+                  }; };
                   const clickable = () => { return analysis().state === "forced"; };
                   return (
                     <g
