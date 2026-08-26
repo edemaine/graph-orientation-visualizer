@@ -7,6 +7,7 @@
   --paper-deep: 233 225 210
   --background-mid: 248 245 237
   --surface: 255 255 255
+  --on-accent: 255 255 255
   --ink: 23 36 44
   --muted: 105 114 120
   --line: 155 164 166
@@ -154,7 +155,7 @@ button, a, select, [role="button"]
 .field-label, .how-to h3, .legend h3
   display: block
   margin: 0 0 8px
-  color: $muted
+  color: rgb(var(--muted))
   font-size: 11px
   font-weight: 800
   letter-spacing: .12em
@@ -170,23 +171,23 @@ button, a, select, [role="button"]
     right: 14px
     transform: translateY(-56%)
     pointer-events: none
-    color: $blue
+    color: rgb(var(--blue))
     font-size: 18px
 
 select
   width: 100%
   appearance: none
   padding: 12px 42px 12px 14px
-  border: 1px solid rgba($ink, .2)
+  border: 1px solid rgb(var(--ink) / .2)
   border-radius: 10px
   outline: none
-  color: $ink
-  background: rgba(white, .68)
+  color: rgb(var(--ink))
+  background: rgb(var(--surface) / .68)
   font-weight: 650
 
   &:focus-visible
-    border-color: $blue
-    box-shadow: 0 0 0 3px rgba($blue, .13)
+    border-color: rgb(var(--blue))
+    box-shadow: 0 0 0 3px rgb(var(--blue) / .13)
 
 .control-panel h2
   margin: 24px 0 7px
@@ -197,7 +198,7 @@ select
 
 .description
   margin: 0
-  color: $muted
+  color: rgb(var(--muted))
   font-size: 14px
   line-height: 1.55
 
@@ -207,9 +208,9 @@ select
   gap: 12px
   align-items: start
   padding: 14px
-  border: 1px solid rgba($ink, .13)
+  border: 1px solid rgb(var(--ink) / .13)
   border-radius: 13px
-  background: rgba(white, .52)
+  background: rgb(var(--surface) / .52)
 
   strong
     display: block
@@ -218,7 +219,7 @@ select
 
   p
     margin: 0
-    color: $muted
+    color: rgb(var(--muted))
     font-size: 12px
     line-height: 1.45
 
@@ -228,30 +229,30 @@ select
     display: grid
     place-items: center
     border-radius: 50%
-    background: rgba($ink, .08)
+    background: rgb(var(--ink) / .08)
     font-size: 19px
     font-weight: 800
 
   &--success
-    border-color: rgba($green, .35)
-    background: rgba($green, .08)
+    border-color: rgb(var(--green) / .35)
+    background: rgb(var(--green) / .08)
     .state-card__icon
-      color: white
-      background: $green
+      color: rgb(var(--on-accent))
+      background: rgb(var(--green))
 
   &--danger
-    border-color: rgba($red, .36)
-    background: rgba($red, .07)
+    border-color: rgb(var(--red) / .36)
+    background: rgb(var(--red) / .07)
     .state-card__icon
-      color: white
-      background: $red
+      color: rgb(var(--on-accent))
+      background: rgb(var(--red))
 
   &--hint
-    border-color: rgba($cyan, .4)
-    background: rgba($cyan, .08)
+    border-color: rgb(var(--cyan) / .4)
+    background: rgb(var(--cyan) / .08)
     .state-card__icon
-      color: white
-      background: $cyan
+      color: rgb(var(--on-accent))
+      background: rgb(var(--cyan))
 
 .how-to ol
   display: grid
@@ -265,7 +266,7 @@ select
   grid-template-columns: 24px 1fr
   gap: 10px
   align-items: start
-  color: $muted
+  color: rgb(var(--muted))
   font-size: 13px
   line-height: 1.4
 
@@ -274,10 +275,10 @@ select
   height: 23px
   display: grid
   place-items: center
-  border: 1px solid rgba($ink, .18)
+  border: 1px solid rgb(var(--ink) / .18)
   border-radius: 50%
-  color: $ink
-  background: rgba(white, .46)
+  color: rgb(var(--ink))
+  background: rgb(var(--surface) / .46)
   font-size: 11px
   font-weight: 800
 
@@ -290,33 +291,33 @@ select
     display: flex
     align-items: center
     gap: 7px
-    color: $muted
+    color: rgb(var(--muted))
     font-size: 12px
 
 .dot
   width: 10px
   height: 10px
-  border: 2px solid $line
+  border: 2px solid rgb(var(--line))
   border-radius: 50%
-  background: $paper
+  background: rgb(var(--paper))
 
   &--forced
-    border-color: $cyan
-    background: rgba($cyan, .32)
+    border-color: rgb(var(--cyan))
+    background: rgb(var(--cyan) / .32)
   &--satisfied
-    border-color: $green
-    background: $green
+    border-color: rgb(var(--green))
+    background: rgb(var(--green))
   &--impossible
-    border-color: $red
-    background: $red
+    border-color: rgb(var(--red))
+    background: rgb(var(--red))
 
 .reset-button
   width: 100%
   margin-top: auto
   padding: 12px 16px
-  border: 1px solid rgba($ink, .22)
+  border: 1px solid rgb(var(--ink) / .22)
   border-radius: 10px
-  color: $ink
+  color: rgb(var(--ink))
   background: transparent
   cursor: pointer
   font-size: 13px
@@ -324,11 +325,11 @@ select
   transition: background .18s ease, transform .18s ease
 
   &:hover
-    background: rgba(white, .6)
+    background: rgb(var(--surface) / .6)
     transform: translateY(-1px)
 
   &:focus-visible
-    outline: 3px solid rgba($blue, .2)
+    outline: 3px solid rgb(var(--blue) / .2)
     outline-offset: 2px
 
 .canvas-panel
@@ -342,37 +343,37 @@ select
   justify-content: space-between
   align-items: center
   gap: 14px
-  color: $muted
+  color: rgb(var(--muted))
   font-size: 12px
 
 .counter strong
-  color: $ink
+  color: rgb(var(--ink))
 
 .constraint-note strong
-  color: $blue
+  color: rgb(var(--blue))
 
 .graph-frame
   position: relative
   min-height: 500px
   flex: 1
   overflow: hidden
-  border: 1px solid rgba($ink, .15)
+  border: 1px solid rgb(var(--ink) / .15)
   border-radius: 20px
-  background-color: rgba(255, 255, 255, .62)
-  background-image: radial-gradient(rgba($ink, .095) 1px, transparent 1px)
+  background-color: rgb(var(--surface) / .62)
+  background-image: radial-gradient(rgb(var(--ink) / .095) 1px, transparent 1px)
   background-size: 20px 20px
-  box-shadow: 0 20px 60px rgba($ink, .09), inset 0 1px 0 rgba(white, .85)
+  box-shadow: 0 20px 60px rgb(var(--ink) / .09), inset 0 1px 0 rgb(var(--surface) / .85)
 
   &::before
     content: ""
     position: absolute
     inset: 0
     pointer-events: none
-    background: linear-gradient(145deg, rgba(white, .4), transparent 40%)
+    background: linear-gradient(145deg, rgb(var(--surface) / .4), transparent 40%)
 
   &--solved
-    border-color: rgba($green, .5)
-    box-shadow: 0 20px 60px rgba($ink, .09), 0 0 0 4px rgba($green, .08)
+    border-color: rgb(var(--green) / .5)
+    box-shadow: 0 20px 60px rgb(var(--ink) / .09), 0 0 0 4px rgb(var(--green) / .08)
 
 .graph-canvas
   position: relative
@@ -389,25 +390,25 @@ select
   stroke-linejoin: round
 
 .edge-base
-  stroke: $line
+  stroke: rgb(var(--line))
   stroke-width: 4
 
 .edge-oriented
-  stroke: $blue
+  stroke: rgb(var(--blue))
   stroke-width: 5
 
 #arrow path
-  fill: $blue
+  fill: rgb(var(--blue))
 
 .edge-forced
-  stroke: $cyan
+  stroke: rgb(var(--cyan))
   stroke-width: 4
   stroke-dasharray: 8 8
   opacity: .74
   animation: drift 1s linear infinite
 
 #ghost-arrow path
-  fill: $cyan
+  fill: rgb(var(--cyan))
 
 .edge-hit
   fill: none
@@ -417,27 +418,27 @@ select
   pointer-events: stroke
 
 .edge-group:focus-within .edge-base
-  stroke: $amber
+  stroke: rgb(var(--amber))
   stroke-width: 7
 
 .edge-group--conflict .edge-base
-  stroke: $red
+  stroke: rgb(var(--red))
   stroke-dasharray: 5 5
 
 .edge-hover
   pointer-events: none
-  fill: rgba($blue, .2)
-  stroke: rgba($blue, .72)
+  fill: rgb(var(--blue) / .2)
+  stroke: rgb(var(--blue) / .72)
   stroke-width: 2
 
   &--2
-    fill: rgba($red, .16)
-    stroke: rgba($red, .72)
+    fill: rgb(var(--red) / .16)
+    stroke: rgb(var(--red) / .72)
 
 .external-port
   pointer-events: none
-  fill: $paper
-  stroke: $ink
+  fill: rgb(var(--paper))
+  stroke: rgb(var(--ink))
   stroke-width: 2
 
 .vertex
@@ -449,63 +450,63 @@ select
   stroke-width: 3
 
 .vertex-body
-  fill: #faf8f1
-  stroke: $line
+  fill: rgb(var(--node-surface))
+  stroke: rgb(var(--line))
   stroke-width: 3
   transition: fill .18s ease, stroke .18s ease, stroke-width .18s ease
 
 .vertex-label
   pointer-events: none
-  fill: $ink
+  fill: rgb(var(--ink))
   font-family: Georgia, "Times New Roman", serif
   font-size: 16px
   font-weight: 700
 
 .vertex--forced
   .vertex-body
-    fill: #e5f7f7
-    stroke: $cyan
+    fill: rgb(var(--forced-surface))
+    stroke: rgb(var(--cyan))
     stroke-width: 4
   .vertex-halo
-    stroke: rgba($cyan, .24)
+    stroke: rgb(var(--cyan) / .24)
 
 .vertex--clickable
   cursor: pointer
   &:hover .vertex-halo, &:focus-visible .vertex-halo
-    stroke: rgba($cyan, .55)
+    stroke: rgb(var(--cyan) / .55)
     stroke-dasharray: 4 4
   &:focus-visible .vertex-body
     stroke-width: 6
 
 .vertex--satisfied
   .vertex-body
-    fill: #e8f4eb
-    stroke: $green
+    fill: rgb(var(--satisfied-surface))
+    stroke: rgb(var(--green))
   .vertex-halo
-    stroke: rgba($green, .15)
+    stroke: rgb(var(--green) / .15)
 
 .vertex--impossible
   .vertex-body
-    fill: #fbe7e3
-    stroke: $red
+    fill: rgb(var(--impossible-surface))
+    stroke: rgb(var(--red))
     stroke-width: 4
   .vertex-halo
-    stroke: rgba($red, .2)
+    stroke: rgb(var(--red) / .2)
     stroke-dasharray: 4 4
 
 .vertex-badge
   circle
-    fill: $green
-    stroke: #faf8f1
+    fill: rgb(var(--green))
+    stroke: rgb(var(--node-surface))
     stroke-width: 2
   text
-    fill: white
+    fill: rgb(var(--on-accent))
     font-family: ui-sans-serif, system-ui, sans-serif
     font-size: 12px
     font-weight: 900
 
 .vertex--impossible .vertex-badge circle
-  fill: $red
+  fill: rgb(var(--red))
 
 .victory-toast
   position: absolute
@@ -517,11 +518,11 @@ select
   align-items: center
   gap: 9px
   padding: 10px 15px
-  border: 1px solid rgba($green, .35)
+  border: 1px solid rgb(var(--green) / .35)
   border-radius: 999px
-  color: color.adjust($green, $lightness: -12%)
-  background: rgba(#eff8f1, .94)
-  box-shadow: 0 10px 35px rgba($ink, .14)
+  color: rgb(var(--green-strong))
+  background: rgb(var(--victory-surface) / .94)
+  box-shadow: 0 10px 35px rgb(var(--ink) / .14)
   font-size: 13px
   font-weight: 800
   animation: arrive .28s ease-out
@@ -532,22 +533,22 @@ select
     display: grid
     place-items: center
     border-radius: 50%
-    color: white
-    background: $green
+    color: rgb(var(--on-accent))
+    background: rgb(var(--green))
 
 .keyboard-note
   margin: 9px 2px 0
-  color: $muted
+  color: rgb(var(--muted))
   font-size: 11px
   text-align: right
 
 kbd
   padding: 1px 5px
-  border: 1px solid rgba($ink, .2)
+  border: 1px solid rgb(var(--ink) / .2)
   border-bottom-width: 2px
   border-radius: 4px
-  color: $ink
-  background: rgba(white, .6)
+  color: rgb(var(--ink))
+  background: rgb(var(--surface) / .6)
   font-family: inherit
   font-size: 10px
 
@@ -602,7 +603,7 @@ kbd
     color: transparent
 
     span
-      color: $ink
+      color: rgb(var(--ink))
       font-size: 17px
 
   .workspace
