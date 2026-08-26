@@ -48,14 +48,26 @@ describe("partial vertex analysis", () => {
 
 const satisfyingAssignments = (graph: GraphDefinition) => {
   const solutions: Record<string, 0 | 1>[] = [];
-  for (let mask = 0; mask < 2 ** graph.edges.length; mask += 1) {
-    const directions = Object.fromEntries(
-      graph.edges.map((edge, index) => [edge.id, ((mask >> index) & 1) as 0 | 1]),
-    );
-    if (graph.vertices.every((vertex) => analyzeVertex(graph, directions, vertex).state === "satisfied")) {
-      solutions.push(directions);
+  const directions = emptyDirections(graph);
+
+  const search = (edgeIndex: number) => {
+    if (edgeIndex === graph.edges.length) {
+      solutions.push({ ...directions } as Record<string, 0 | 1>);
+      return;
     }
-  }
+
+    const edge = graph.edges[edgeIndex];
+    for (const direction of [0, 1] as const) {
+      directions[edge.id] = direction;
+      const viable = graph.vertices.every(
+        (vertex) => analyzeVertex(graph, directions, vertex).state !== "impossible",
+      );
+      if (viable) search(edgeIndex + 1);
+    }
+    directions[edge.id] = null;
+  };
+
+  search(0);
   return solutions;
 };
 
@@ -101,5 +113,21 @@ describe("example suite", () => {
     expect([...counts.entries()].sort(([a], [b]) => a - b)).toEqual([
       [3, 1], [5, 1], [10, 1], [12, 1],
     ]);
+  });
+
+  it("Figure 4 has the two orientations induced by its satisfying assignments", () => {
+    const graph = EXAMPLES.find(({ id }) => id === "figure-4-one-in-three-go")!;
+    expect(graph.vertices).toHaveLength(16);
+    expect(graph.edges).toHaveLength(24);
+    expect(satisfyingAssignments(graph)).toHaveLength(2);
+
+    const gridPoints = [
+      ...graph.vertices,
+      ...graph.edges.flatMap(({ route }) => route ?? []),
+    ];
+    for (const { x, y } of gridPoints) {
+      expect(Number.isInteger((x - 50) / 60)).toBe(true);
+      expect(Number.isInteger((780 - y) / 60)).toBe(true);
+    }
   });
 });

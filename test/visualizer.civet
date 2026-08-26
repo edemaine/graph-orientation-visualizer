@@ -24,4 +24,20 @@ describe("example selection", () => {
     expect(root.querySelector("h2")?.textContent).toBe("1-in-4 simulation");
     expect(root.querySelectorAll(".edge-hit")).toHaveLength(5);
   });
+
+  it("renders Figure 4 edges along their orthogonal routes", () => {
+    const root = document.createElement("div");
+    dispose = render(() => <Visualizer />, root);
+
+    const select = root.querySelector<HTMLSelectElement>("#example")!;
+    select.value = "figure-4-one-in-three-go";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    const outerCycleEdge = root.querySelector<SVGPathElement>(
+      '.edge-hit[aria-label^="x-between-2:"]',
+    );
+    expect(outerCycleEdge?.getAttribute("d")).toBe(
+      "M 679 60 L 1070 60 L 1070 120 L 50 120 L 50 60 L 81 60",
+    );
+  });
 });

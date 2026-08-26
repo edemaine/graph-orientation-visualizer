@@ -17,8 +17,14 @@ const equalizer4 = symmetricConstraint(4, [0, 4], "=");
 const synchronizer = relationConstraint(4, ["1100", "0011"], "synchronizer", "S");
 const alternator6 = relationConstraint(6, ["101010", "010101"], "6-alternator", "A");
 
-const vertex = (id: string, x: number, y: number, constraint: Vertex["constraint"]): Vertex => {
-  return { id, x, y, constraint };
+const vertex = (
+  id: string,
+  x: number,
+  y: number,
+  constraint: Vertex["constraint"],
+  options: Pick<Vertex, "label" | "shape"> = {},
+): Vertex => {
+  return { id, x, y, constraint, ...options };
 };
 const port = (vertexId: string, portNumber: number): EdgeEnd => {
   return { vertex: vertexId, port: portNumber };
@@ -30,6 +36,33 @@ const edge = (
   b: EdgeEnd,
   control?: Edge["control"],
 ): Edge => { return { id, ends: [a, b], control }; };
+const routedEdge = (
+  id: string,
+  a: EdgeEnd,
+  b: EdgeEnd,
+  route: NonNullable<Edge["route"]>,
+): Edge => { return { id, ends: [a, b], route }; };
+
+const FIGURE_4_GRID_SIZE = 60;
+const figure4Point = (column: number, row: number) => {
+  return {
+    x: 50 + FIGURE_4_GRID_SIZE * column,
+    y: 780 - FIGURE_4_GRID_SIZE * row,
+  };
+};
+const figure4Route = (...points: [number, number][]) => {
+  return points.map(([column, row]) => figure4Point(column, row));
+};
+const figure4Vertex = (
+  id: string,
+  column: number,
+  row: number,
+  constraint: Vertex["constraint"],
+  options: Pick<Vertex, "label" | "shape"> = {},
+) => {
+  const { x, y } = figure4Point(column, row);
+  return vertex(id, x, y, constraint, options);
+};
 
 const examples: GraphDefinition[] = [
   {
@@ -95,6 +128,75 @@ const examples: GraphDefinition[] = [
       edge("upper", port("left", 0), port("right", 0), { x: 400, y: 105 }),
       edge("middle", port("left", 1), port("right", 1)),
       edge("lower", port("left", 2), port("right", 2), { x: 400, y: 465 }),
+    ],
+  },
+  {
+    id: "figure-4-one-in-three-go",
+    group: "Full graphs",
+    title: "Horiyama et al. Figure 4",
+    description: "The graph for (x ∨ y ∨ z̄) ∧ (x ∨ z ∨ w). Literal vertices need 0 or 3 incoming edges; C₁ and C₂ need one incoming, while the square negated-clause vertices need one outgoing.",
+    viewBox: [0, 0, 1120, 780],
+    vertices: [
+      figure4Vertex("x1", 1, 12, equalizer3, { label: "x" }),
+      figure4Vertex("nx1", 2, 12, equalizer3, { label: "x̄" }),
+      figure4Vertex("x2", 9, 12, equalizer3, { label: "x" }),
+      figure4Vertex("nx2", 10, 12, equalizer3, { label: "x̄" }),
+      figure4Vertex("y1", 4, 10, equalizer3, { label: "y" }),
+      figure4Vertex("ny1", 5, 10, equalizer3, { label: "ȳ" }),
+      figure4Vertex("nz1", 7, 7, equalizer3, { label: "z̄" }),
+      figure4Vertex("z1", 8, 7, equalizer3, { label: "z" }),
+      figure4Vertex("z2", 12, 8, equalizer3, { label: "z" }),
+      figure4Vertex("nz2", 13, 8, equalizer3, { label: "z̄" }),
+      figure4Vertex("w1", 15, 6, equalizer3, { label: "w" }),
+      figure4Vertex("nw1", 16, 6, equalizer3, { label: "w̄" }),
+      figure4Vertex("c1", 2, 1, oneIn3, { label: "C₁" }),
+      figure4Vertex("nc1", 7, 1, twoIn3, { label: "C̄₁", shape: "square" }),
+      figure4Vertex("c2", 10, 1, oneIn3, { label: "C₂" }),
+      figure4Vertex("nc2", 15, 1, twoIn3, { label: "C̄₂", shape: "square" }),
+    ],
+    edges: [
+      edge("x-pair-1", port("x1", 0), port("nx1", 0)),
+      edge("x-between-1", port("nx1", 1), port("x2", 0)),
+      edge("x-pair-2", port("x2", 1), port("nx2", 0)),
+      routedEdge("x-between-2", port("nx2", 1), port("x1", 1), [
+        ...figure4Route([17, 12], [17, 11], [0, 11], [0, 12]),
+      ]),
+      edge("y-pair", port("y1", 0), port("ny1", 0)),
+      routedEdge("y-return", port("ny1", 1), port("y1", 1), [
+        ...figure4Route([17, 10], [17, 9], [0, 9], [0, 10]),
+      ]),
+      edge("z-pair-1", port("nz1", 0), port("z1", 0)),
+      routedEdge("z-between-1", port("z1", 1), port("nz2", 1), [
+        ...figure4Route([17, 7], [17, 8]),
+      ]),
+      edge("z-pair-2", port("z2", 0), port("nz2", 0)),
+      routedEdge("z-between-2", port("z2", 1), port("nz1", 1), [
+        ...figure4Route([0, 8], [0, 7]),
+      ]),
+      edge("w-pair", port("w1", 0), port("nw1", 0)),
+      routedEdge("w-return", port("nw1", 1), port("w1", 1), [
+        ...figure4Route([17, 6], [17, 5], [0, 5], [0, 6]),
+      ]),
+      routedEdge("c1-x", port("x1", 2), port("c1", 0), figure4Route([1, 1])),
+      routedEdge("c1-y", port("y1", 2), port("c1", 1), figure4Route([4, 2], [2, 2])),
+      routedEdge("c1-nz", port("nz1", 2), port("c1", 2), [
+        ...figure4Route([7, 4], [3, 4], [3, 1]),
+      ]),
+      routedEdge("nc1-nx", port("nx1", 2), port("nc1", 0), [
+        ...figure4Route([2, 3], [6, 3], [6, 1]),
+      ]),
+      routedEdge("nc1-ny", port("ny1", 2), port("nc1", 1), figure4Route([5, 2], [7, 2])),
+      routedEdge("nc1-z", port("z1", 2), port("nc1", 2), figure4Route([8, 1])),
+      routedEdge("c2-x", port("x2", 2), port("c2", 0), figure4Route([9, 1])),
+      routedEdge("c2-z", port("z2", 2), port("c2", 1), figure4Route([12, 2], [10, 2])),
+      routedEdge("c2-w", port("w1", 2), port("c2", 2), [
+        ...figure4Route([15, 4], [11, 4], [11, 1]),
+      ]),
+      routedEdge("nc2-nx", port("nx2", 2), port("nc2", 0), [
+        ...figure4Route([10, 3], [14, 3], [14, 1]),
+      ]),
+      routedEdge("nc2-nz", port("nz2", 2), port("nc2", 1), figure4Route([13, 2], [15, 2])),
+      routedEdge("nc2-nw", port("nw1", 2), port("nc2", 2), figure4Route([16, 1])),
     ],
   },
   {

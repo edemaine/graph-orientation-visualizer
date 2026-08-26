@@ -12,6 +12,8 @@ export interface Vertex {
   x: number;
   y: number;
   constraint: Constraint;
+  label?: string;
+  shape?: "circle" | "square";
 }
 
 export interface VertexEnd {
@@ -30,6 +32,7 @@ export interface Edge {
   id: string;
   ends: [EdgeEnd, EdgeEnd];
   control?: { x: number; y: number };
+  route?: { x: number; y: number }[];
 }
 
 export interface GraphDefinition {
@@ -186,6 +189,7 @@ export const validateGraph = (graph: GraphDefinition): string[] => {
   for (const edge of graph.edges) {
     if (edgeIds.has(edge.id)) errors.push(`Duplicate edge id ${edge.id}`);
     edgeIds.add(edge.id);
+    if (edge.control && edge.route) errors.push(`Edge ${edge.id} cannot have both a control point and a route`);
     edge.ends.forEach((end) => {
       if ("vertex" in end && !vertexIds.has(end.vertex)) {
         errors.push(`Edge ${edge.id} refers to missing vertex ${end.vertex}`);

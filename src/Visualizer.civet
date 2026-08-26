@@ -31,12 +31,20 @@ const unit = (point: Point): Point => {
 const edgeGeometry = (graph: GraphDefinition, edge: Edge) => {
   const rawStart = endpointPoint(graph, edge.ends[0]);
   const rawEnd = endpointPoint(graph, edge.ends[1]);
+  const firstWaypoint = edge.route?.[0];
+  const lastWaypoint = edge.route?.[edge.route.length - 1];
   const startDirection = edge.control
     ? unit({ x: edge.control.x - rawStart.x, y: edge.control.y - rawStart.y })
-    : unit({ x: rawEnd.x - rawStart.x, y: rawEnd.y - rawStart.y });
+    : unit({
+        x: (firstWaypoint ?? rawEnd).x - rawStart.x,
+        y: (firstWaypoint ?? rawEnd).y - rawStart.y,
+      });
   const endDirection = edge.control
     ? unit({ x: rawEnd.x - edge.control.x, y: rawEnd.y - edge.control.y })
-    : startDirection;
+    : unit({
+        x: rawEnd.x - (lastWaypoint ?? rawStart).x,
+        y: rawEnd.y - (lastWaypoint ?? rawStart).y,
+      });
   const startPadding = "vertex" in edge.ends[0] ? NODE_RADIUS : 3;
   const endPadding = "vertex" in edge.ends[1] ? NODE_RADIUS : 3;
   const start = {
@@ -47,15 +55,41 @@ const edgeGeometry = (graph: GraphDefinition, edge: Edge) => {
     x: rawEnd.x - endDirection.x * endPadding,
     y: rawEnd.y - endDirection.y * endPadding,
   };
-  const middle = edge.control ? ` Q ${edge.control.x} ${edge.control.y}` : " L";
-  const forward = `M ${start.x} ${start.y}${middle} ${end.x} ${end.y}`;
-  const reverse = `M ${end.x} ${end.y}${middle} ${start.x} ${start.y}`;
-  const midpoint = edge.control
-    ? {
-        x: 0.25 * start.x + 0.5 * edge.control.x + 0.25 * end.x,
-        y: 0.25 * start.y + 0.5 * edge.control.y + 0.25 * end.y,
-      }
-    : { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+  if (edge.control) {
+    const middle = ` Q ${edge.control.x} ${edge.control.y}`;
+    const forward = `M ${start.x} ${start.y}${middle} ${end.x} ${end.y}`;
+    const reverse = `M ${end.x} ${end.y}${middle} ${start.x} ${start.y}`;
+    const midpoint = {
+      x: 0.25 * start.x + 0.5 * edge.control.x + 0.25 * end.x,
+      y: 0.25 * start.y + 0.5 * edge.control.y + 0.25 * end.y,
+    };
+    return { start, end, midpoint, forward, reverse };
+  }
+
+  const points = [start, ...(edge.route ?? []), end];
+  const path = (pathPoints: Point[]) => {
+    return `M ${pathPoints.map(({ x, y }) => `${x} ${y}`).join(" L ")}`;
+  };
+  const lengths = points.slice(1).map((point, index) => {
+    return Math.hypot(point.x - points[index].x, point.y - points[index].y);
+  });
+  const halfway = lengths.reduce((sum, length) => sum + length, 0) / 2;
+  let traversed = 0;
+  let midpoint = { ...start };
+  for (let index = 0; index < lengths.length; index += 1) {
+    const length = lengths[index];
+    if (traversed + length >= halfway) {
+      const fraction = length === 0 ? 0 : (halfway - traversed) / length;
+      midpoint = {
+        x: points[index].x + fraction * (points[index + 1].x - points[index].x),
+        y: points[index].y + fraction * (points[index + 1].y - points[index].y),
+      };
+      break;
+    }
+    traversed += length;
+  }
+  const forward = path(points);
+  const reverse = path([...points].reverse());
   return { start, end, midpoint, forward, reverse };
 };
 
@@ -365,7 +399,7 @@ export function Visualizer() {
                       transform={`translate(${vertex.x} ${vertex.y})`}
                       role={clickable() ? "button" : undefined}
                       tabindex={clickable() ? 0 : -1}
-                      aria-label={`${vertex.constraint.name} vertex: ${analysis().state}. ${analysis().compatible.length} compatible local completions.`}
+                      aria-label={`${vertex.label ? `${vertex.label}, ` : ""}${vertex.constraint.name} vertex: ${analysis().state}. ${analysis().compatible.length} compatible local completions.`}
                       onClick={() => applyForcedAt(vertex)}
                       onKeyDown={(event) => {
                         if (clickable() && (event.key === "Enter" || event.key === " ")) {
@@ -374,10 +408,15 @@ export function Visualizer() {
                         }
                       }}
                     >
-                      <title>{vertex.constraint.name}: {analysis().state}</title>
+                      <title>{vertex.label ? `${vertex.label}: ` : ""}{vertex.constraint.name}, {analysis().state}</title>
                       <circle class="vertex-halo" r="36" />
-                      <circle class="vertex-body" r={NODE_RADIUS} />
-                      <text class="vertex-label" text-anchor="middle" dominant-baseline="central">{vertex.constraint.shortLabel}</text>
+                      <Show
+                        when={vertex.shape === "square"}
+                        fallback={<circle class="vertex-body" r={NODE_RADIUS} />}
+                      >
+                        <rect class="vertex-body" x={-NODE_RADIUS} y={-NODE_RADIUS} width={2 * NODE_RADIUS} height={2 * NODE_RADIUS} rx="5" />
+                      </Show>
+                      <text class="vertex-label" text-anchor="middle" dominant-baseline="central">{vertex.label ?? vertex.constraint.shortLabel}</text>
                       <Show when={analysis().state === "satisfied"}>
                         <g class="vertex-badge"><circle cx="23" cy="-23" r="10" /><text x="23" y="-22" text-anchor="middle" dominant-baseline="central">✓</text></g>
                       </Show>

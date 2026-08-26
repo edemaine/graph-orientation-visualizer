@@ -16,7 +16,8 @@ Included:
 - keyboard edge controls and touch-sized SVG hit targets;
 - reset and solved-state feedback;
 - ordered port relations, symmetric `S`-in-`j` relations, multiedges, self-loop-aware analysis, and dangling gadget edges;
-- tutorial examples, complete graph puzzles, and gadgets from the paper.
+- tutorial examples, complete graph puzzles, and gadgets from the paper;
+- the 1-in-3 graph-orientation instance from [Figure 4 of *Complexity of Tiling a Polygon with Trominoes or Bars*](https://dspace.jaist.ac.jp/dspace/bitstream/10119/15100/4/23092.pdf).
 
 The current deduction system is deliberately local. It filters the allowed relation at each vertex against the partial orientation. It does not run a general global satisfiability solver, so a partial assignment can occasionally be globally impossible even when no single vertex is locally impossible. Conflicting forced directions on one edge are detected. Graph editing, automatic layout, importing TikZ, and exhaustive gadget-signature analysis are also outside the current scope.
 
