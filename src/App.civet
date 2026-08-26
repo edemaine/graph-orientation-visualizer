@@ -1,0 +1,4 @@
+{ Visualizer } from ./Visualizer.civet
+
+export function App()
+  <Visualizer/>

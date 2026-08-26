@@ -1,0 +1,207 @@
+export type EdgeDirection = 0 | 1 | null;
+
+export interface Constraint {
+  name: string;
+  shortLabel: string;
+  degree: number;
+  allowed: number[];
+}
+
+export interface Vertex {
+  id: string;
+  x: number;
+  y: number;
+  constraint: Constraint;
+}
+
+export interface VertexEnd {
+  vertex: string;
+  port: number;
+}
+
+export interface FreeEnd {
+  x: number;
+  y: number;
+}
+
+export type EdgeEnd = VertexEnd | FreeEnd;
+
+export interface Edge {
+  id: string;
+  ends: [EdgeEnd, EdgeEnd];
+  control?: { x: number; y: number };
+}
+
+export interface GraphDefinition {
+  id: string;
+  group: "Learn" | "Full graphs" | "Paper gadgets";
+  title: string;
+  description: string;
+  vertices: Vertex[];
+  edges: Edge[];
+  viewBox?: [number, number, number, number];
+}
+
+export interface Incidence {
+  edge: Edge;
+  endIndex: 0 | 1;
+  port: number;
+}
+
+export type VertexState = "open" | "forced" | "satisfied" | "impossible";
+
+export interface VertexAnalysis {
+  state: VertexState;
+  compatible: number[];
+  forced: Map<string, 0 | 1>;
+  assignedPorts: number;
+  totalPorts: number;
+}
+
+export const symmetricConstraint = (
+  degree: number,
+  incomingCounts: number[],
+  shortLabel = `${incomingCounts.join(",")}∕${degree}`,
+): Constraint => {
+  const allowed: number[] = [];
+  for (let mask = 0; mask < 2 ** degree; mask += 1) {
+    let count = 0;
+    for (let bit = 0; bit < degree; bit += 1) count += (mask >> bit) & 1;
+    if (incomingCounts.includes(count)) allowed.push(mask);
+  }
+  const countName = incomingCounts.length === 1
+    ? `${incomingCounts[0]}-in-${degree}`
+    : `{${incomingCounts.join(",")}}-in-${degree}`;
+  return { name: countName, shortLabel, degree, allowed };
+};
+
+export const relationConstraint = (
+  degree: number,
+  bitPatterns: string[],
+  name: string,
+  shortLabel: string,
+): Constraint => {
+  return {
+    name,
+    shortLabel,
+    degree,
+    allowed: bitPatterns.map((pattern) => {
+      if (pattern.length !== degree || /[^01]/.test(pattern)) {
+        throw new Error(`Invalid ${name} bit pattern: ${pattern}`);
+      }
+      return [...pattern].reduce(
+        (mask, value, port) => mask | (Number(value) << port),
+        0,
+      );
+    }),
+  };
+};
+
+export const emptyDirections = (graph: GraphDefinition): Record<string, EdgeDirection> => {
+  return Object.fromEntries(graph.edges.map((edge) => [edge.id, null]));
+};
+
+export const incidencesAt = (graph: GraphDefinition, vertexId: string): Incidence[] => {
+  const incidences: Incidence[] = [];
+  for (const edge of graph.edges) {
+    edge.ends.forEach((end, index) => {
+      if ("vertex" in end && end.vertex === vertexId) {
+        incidences.push({ edge, endIndex: index as 0 | 1, port: end.port });
+      }
+    });
+  }
+  return incidences.sort((a, b) => a.port - b.port);
+};
+
+const bitAt = (pattern: number, port: number): 0 | 1 => {
+  return ((pattern >> port) & 1) as 0 | 1;
+};
+
+export const analyzeVertex = (
+  graph: GraphDefinition,
+  directions: Record<string, EdgeDirection>,
+  vertex: Vertex,
+): VertexAnalysis => {
+  const incidences = incidencesAt(graph, vertex.id);
+  const compatible = vertex.constraint.allowed.filter((pattern) => {
+    for (const incidence of incidences) {
+      const direction = directions[incidence.edge.id] ?? null;
+      if (direction !== null && bitAt(pattern, incidence.port) !== Number(direction === incidence.endIndex)) {
+        return false;
+      }
+    }
+
+    // The two incidences of an unoriented self-loop must receive opposite bits.
+    for (const edge of graph.edges) {
+      const local = incidences.filter((incidence) => incidence.edge.id === edge.id);
+      if (local.length === 2 && directions[edge.id] === null) {
+        if (bitAt(pattern, local[0].port) === bitAt(pattern, local[1].port)) return false;
+      }
+    }
+    return true;
+  });
+
+  const forced = new Map<string, 0 | 1>();
+  if (compatible.length > 0) {
+    const unorientedEdges = new Set(
+      incidences
+        .filter(({ edge }) => directions[edge.id] === null)
+        .map(({ edge }) => edge.id),
+    );
+    for (const edgeId of unorientedEdges) {
+      const local = incidences.filter(({ edge }) => edge.id === edgeId);
+      const implied = new Set<0 | 1>();
+      for (const pattern of compatible) {
+        const first = local[0];
+        implied.add(bitAt(pattern, first.port) ? first.endIndex : (1 - first.endIndex) as 0 | 1);
+      }
+      if (implied.size === 1) forced.set(edgeId, [...implied][0]);
+    }
+  }
+
+  const assignedPorts = incidences.filter(({ edge }) => directions[edge.id] !== null).length;
+  const complete = assignedPorts === incidences.length;
+  const state: VertexState = compatible.length === 0
+    ? "impossible"
+    : complete
+      ? "satisfied"
+      : forced.size > 0
+        ? "forced"
+        : "open";
+
+  return {
+    state,
+    compatible,
+    forced,
+    assignedPorts,
+    totalPorts: incidences.length,
+  };
+};
+
+export const validateGraph = (graph: GraphDefinition): string[] => {
+  const errors: string[] = [];
+  const vertexIds = new Set(graph.vertices.map(({ id }) => id));
+  const edgeIds = new Set<string>();
+
+  for (const edge of graph.edges) {
+    if (edgeIds.has(edge.id)) errors.push(`Duplicate edge id ${edge.id}`);
+    edgeIds.add(edge.id);
+    edge.ends.forEach((end) => {
+      if ("vertex" in end && !vertexIds.has(end.vertex)) {
+        errors.push(`Edge ${edge.id} refers to missing vertex ${end.vertex}`);
+      }
+    });
+  }
+
+  for (const vertex of graph.vertices) {
+    const incidences = incidencesAt(graph, vertex.id);
+    if (incidences.length !== vertex.constraint.degree) {
+      errors.push(`${vertex.id} has ${incidences.length} incidences, expected ${vertex.constraint.degree}`);
+    }
+    const ports = incidences.map(({ port }) => port).sort((a, b) => a - b);
+    if (ports.some((port, index) => port !== index)) {
+      errors.push(`${vertex.id} ports must be numbered 0 through ${vertex.constraint.degree - 1}`);
+    }
+  }
+  return errors;
+};

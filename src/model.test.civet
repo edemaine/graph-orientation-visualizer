@@ -1,0 +1,105 @@
+import { describe, expect, it } from "vitest";
+import {
+  analyzeVertex,
+  emptyDirections,
+  relationConstraint,
+  symmetricConstraint,
+  type GraphDefinition,
+} from "./model.civet";
+import { EXAMPLES } from "./examples.civet";
+
+const star: GraphDefinition = {
+  id: "star",
+  group: "Learn",
+  title: "Star",
+  description: "",
+  vertices: [{ id: "v", x: 0, y: 0, constraint: symmetricConstraint(3, [1]) }],
+  edges: [0, 1, 2].map((port) => ({
+    id: `e${port}`,
+    ends: [{ vertex: "v", port }, { x: 100 + port, y: 0 }],
+  })),
+};
+
+describe("partial vertex analysis", () => {
+  it("starts viable and unforced", () => {
+    const analysis = analyzeVertex(star, emptyDirections(star), star.vertices[0]);
+    expect(analysis.state).toBe("open");
+    expect(analysis.compatible).toHaveLength(3);
+  });
+
+  it("finds forced edges after one incoming edge", () => {
+    const analysis = analyzeVertex(star, { e0: 0, e1: null, e2: null }, star.vertices[0]);
+    expect(analysis.state).toBe("forced");
+    expect(analysis.forced.get("e1")).toBe(1);
+    expect(analysis.forced.get("e2")).toBe(1);
+  });
+
+  it("reports a local contradiction", () => {
+    const analysis = analyzeVertex(star, { e0: 0, e1: 0, e2: null }, star.vertices[0]);
+    expect(analysis.state).toBe("impossible");
+    expect(analysis.compatible).toHaveLength(0);
+  });
+
+  it("supports ordered asymmetric relations", () => {
+    const constraint = relationConstraint(2, ["10"], "ordered", "O");
+    expect(constraint.allowed).toEqual([1]);
+  });
+});
+
+const satisfyingAssignments = (graph: GraphDefinition) => {
+  const solutions: Record<string, 0 | 1>[] = [];
+  for (let mask = 0; mask < 2 ** graph.edges.length; mask += 1) {
+    const directions = Object.fromEntries(
+      graph.edges.map((edge, index) => [edge.id, ((mask >> index) & 1) as 0 | 1]),
+    );
+    if (graph.vertices.every((vertex) => analyzeVertex(graph, directions, vertex).state === "satisfied")) {
+      solutions.push(directions);
+    }
+  }
+  return solutions;
+};
+
+const boundaryMask = (graph: GraphDefinition, directions: Record<string, 0 | 1>) => {
+  const boundary = graph.edges.filter((edge) => edge.ends.some((end) => !("vertex" in end)));
+  return boundary.reduce((mask, edge, index) => {
+    const internalIndex = edge.ends.findIndex((end) => "vertex" in end) as 0 | 1;
+    return mask | (Number(directions[edge.id] === internalIndex) << index);
+  }, 0);
+};
+
+describe("example suite", () => {
+  it.each(EXAMPLES.map((example) => [example.title, example] as const))(
+    "%s has a satisfying orientation",
+    (_, graph) => expect(satisfyingAssignments(graph).length).toBeGreaterThan(0),
+  );
+
+  it("the two-vertex gadget has exactly the 1-in-4 boundary relation", () => {
+    const graph = EXAMPLES.find(({ id }) => id === "one-in-four")!;
+    const masks = new Set(satisfyingAssignments(graph).map((solution) => boundaryMask(graph, solution)));
+    expect([...masks].sort((a, b) => a - b)).toEqual([1, 2, 4, 8]);
+  });
+
+  it("the parsimonious gadget uniquely realizes every 2-in-4 boundary state", () => {
+    const graph = EXAMPLES.find(({ id }) => id === "parsimonious-two-in-four")!;
+    const counts = new Map<number, number>();
+    for (const solution of satisfyingAssignments(graph)) {
+      const mask = boundaryMask(graph, solution);
+      counts.set(mask, (counts.get(mask) ?? 0) + 1);
+    }
+    expect([...counts.entries()].sort(([a], [b]) => a - b)).toEqual([
+      [3, 1], [5, 1], [6, 1], [9, 1], [10, 1], [12, 1],
+    ]);
+  });
+
+  it("the planar crossover uniquely propagates both crossing signals", () => {
+    const graph = EXAMPLES.find(({ id }) => id === "crossover")!;
+    const counts = new Map<number, number>();
+    for (const solution of satisfyingAssignments(graph)) {
+      const mask = boundaryMask(graph, solution);
+      counts.set(mask, (counts.get(mask) ?? 0) + 1);
+    }
+    expect([...counts.entries()].sort(([a], [b]) => a - b)).toEqual([
+      [3, 1], [5, 1], [10, 1], [12, 1],
+    ]);
+  });
+});

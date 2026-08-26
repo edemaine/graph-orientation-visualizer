@@ -1,0 +1,220 @@
+import {
+  type Edge,
+  type EdgeEnd,
+  type GraphDefinition,
+  type Vertex,
+  relationConstraint,
+  symmetricConstraint,
+  validateGraph,
+} from "./model.civet";
+
+const oneIn2 = symmetricConstraint(2, [1], "1∕2");
+const oneIn3 = symmetricConstraint(3, [1], "1∕3");
+const twoIn3 = symmetricConstraint(3, [2], "2∕3");
+const twoIn4 = symmetricConstraint(4, [2], "2∕4");
+const equalizer3 = symmetricConstraint(3, [0, 3], "=");
+const equalizer4 = symmetricConstraint(4, [0, 4], "=");
+const synchronizer = relationConstraint(4, ["1100", "0011"], "synchronizer", "S");
+const alternator6 = relationConstraint(6, ["101010", "010101"], "6-alternator", "A");
+
+const vertex = (id: string, x: number, y: number, constraint: Vertex["constraint"]): Vertex => {
+  return { id, x, y, constraint };
+};
+const port = (vertexId: string, portNumber: number): EdgeEnd => {
+  return { vertex: vertexId, port: portNumber };
+};
+const free = (x: number, y: number): EdgeEnd => { return { x, y }; };
+const edge = (
+  id: string,
+  a: EdgeEnd,
+  b: EdgeEnd,
+  control?: Edge["control"],
+): Edge => { return { id, ends: [a, b], control }; };
+
+const examples: GraphDefinition[] = [
+  {
+    id: "cycle-tutorial",
+    group: "Learn",
+    title: "Directed cycle",
+    description: "Each vertex needs exactly one incoming edge. Try making a consistently directed cycle.",
+    vertices: [
+      vertex("a", 255, 135, oneIn2),
+      vertex("b", 545, 135, oneIn2),
+      vertex("c", 545, 425, oneIn2),
+      vertex("d", 255, 425, oneIn2),
+    ],
+    edges: [
+      edge("ab", port("a", 0), port("b", 0)),
+      edge("bc", port("b", 1), port("c", 0)),
+      edge("cd", port("c", 1), port("d", 0)),
+      edge("da", port("d", 1), port("a", 1)),
+    ],
+  },
+  {
+    id: "forced-star",
+    group: "Learn",
+    title: "A forced first move",
+    description: "Direct one edge into the 1-in-3 vertex. Its remaining edges become forced; click the vertex to apply them.",
+    vertices: [vertex("v", 400, 285, oneIn3)],
+    edges: [
+      edge("north", port("v", 0), free(400, 80)),
+      edge("southeast", port("v", 1), free(610, 420)),
+      edge("southwest", port("v", 2), free(190, 420)),
+    ],
+  },
+  {
+    id: "k4-puzzle",
+    group: "Full graphs",
+    title: "Planar K₄ puzzle",
+    description: "Orient every edge so the upper pair receive one incoming edge and the lower pair receive two.",
+    vertices: [
+      vertex("top", 400, 90, oneIn3),
+      vertex("left", 175, 430, oneIn3),
+      vertex("right", 625, 430, twoIn3),
+      vertex("middle", 400, 305, twoIn3),
+    ],
+    edges: [
+      edge("tl", port("top", 0), port("left", 0)),
+      edge("tr", port("top", 1), port("right", 0)),
+      edge("lr", port("left", 1), port("right", 1), { x: 400, y: 520 }),
+      edge("tm", port("top", 2), port("middle", 0)),
+      edge("lm", port("left", 2), port("middle", 1)),
+      edge("rm", port("right", 2), port("middle", 2)),
+    ],
+  },
+  {
+    id: "parallel-puzzle",
+    group: "Full graphs",
+    title: "Three parallel edges",
+    description: "A 1-in-3 vertex and a 2-in-3 vertex share three edges. Any satisfying choice at one side satisfies the other.",
+    vertices: [
+      vertex("left", 235, 285, oneIn3),
+      vertex("right", 565, 285, twoIn3),
+    ],
+    edges: [
+      edge("upper", port("left", 0), port("right", 0), { x: 400, y: 105 }),
+      edge("middle", port("left", 1), port("right", 1)),
+      edge("lower", port("left", 2), port("right", 2), { x: 400, y: 465 }),
+    ],
+  },
+  {
+    id: "one-in-four",
+    group: "Paper gadgets",
+    title: "1-in-4 simulation",
+    description: "Two 1-in-3 vertices joined by an internal edge behave like one 1-in-4 vertex on the four dangling edges.",
+    vertices: [
+      vertex("left", 315, 280, oneIn3),
+      vertex("right", 485, 280, oneIn3),
+    ],
+    edges: [
+      edge("internal", port("left", 0), port("right", 0)),
+      edge("nw", port("left", 1), free(145, 115)),
+      edge("sw", port("left", 2), free(145, 445)),
+      edge("ne", port("right", 1), free(655, 115)),
+      edge("se", port("right", 2), free(655, 445)),
+    ],
+  },
+  {
+    id: "synchronizer",
+    group: "Paper gadgets",
+    title: "Synchronizer",
+    description: "This asymmetric degree-4 relation has two complementary satisfying states.",
+    vertices: [vertex("sync", 400, 280, synchronizer)],
+    edges: [
+      edge("north", port("sync", 0), free(400, 70)),
+      edge("east", port("sync", 1), free(650, 280)),
+      edge("south", port("sync", 2), free(400, 490)),
+      edge("west", port("sync", 3), free(150, 280)),
+    ],
+  },
+  {
+    id: "alternator",
+    group: "Paper gadgets",
+    title: "6-alternator",
+    description: "Neighboring ports alternate between inward and outward in either of two complementary states.",
+    vertices: [vertex("alt", 400, 280, alternator6)],
+    edges: Array.from({ length: 6 }, (_, index) => {
+      const angle = -Math.PI / 2 + index * Math.PI / 3;
+      return edge(
+        `ray-${index}`,
+        port("alt", index),
+        free(400 + 230 * Math.cos(angle), 280 + 210 * Math.sin(angle)),
+      );
+    }),
+  },
+  {
+    id: "crossover",
+    group: "Paper gadgets",
+    title: "Planar crossover",
+    description: "The paper’s planar crossover built from three 2-in-4 vertices and two synchronizers.",
+    vertices: [
+      vertex("a", 400, 145, synchronizer),
+      vertex("b", 255, 280, twoIn4),
+      vertex("c", 400, 280, twoIn4),
+      vertex("d", 545, 280, twoIn4),
+      vertex("e", 400, 415, synchronizer),
+    ],
+    edges: [
+      edge("north", port("a", 0), free(400, 45)),
+      edge("ad", port("a", 1), port("d", 0)),
+      edge("ac", port("a", 2), port("c", 0)),
+      edge("ab", port("a", 3), port("b", 0)),
+      edge("west", port("b", 1), free(105, 280)),
+      edge("bc", port("b", 2), port("c", 1)),
+      edge("be", port("b", 3), port("e", 1)),
+      edge("cd", port("c", 2), port("d", 1)),
+      edge("ce", port("c", 3), port("e", 0)),
+      edge("east", port("d", 2), free(695, 280)),
+      edge("de", port("d", 3), port("e", 2)),
+      edge("south", port("e", 3), free(400, 515)),
+    ],
+  },
+  {
+    id: "parsimonious-two-in-four",
+    group: "Paper gadgets",
+    title: "Parsimonious 2-in-4",
+    description: "A planar strict simulation using 1-in-3, 2-in-3, and 3-equalizer vertices; every valid boundary state extends uniquely.",
+    vertices: [
+      vertex("a", 290, 105, oneIn3), vertex("b", 510, 105, twoIn3),
+      vertex("c", 290, 225, twoIn3), vertex("d", 510, 225, equalizer3),
+      vertex("e", 290, 345, oneIn3), vertex("f", 510, 345, equalizer3),
+      vertex("g", 290, 465, twoIn3), vertex("h", 510, 465, oneIn3),
+    ],
+    edges: [
+      edge("nw", free(145, 40), port("a", 0)),
+      edge("ne", port("b", 0), free(655, 40)),
+      edge("sw", free(145, 530), port("g", 0)),
+      edge("se", port("h", 0), free(655, 530)),
+      edge("ab", port("a", 1), port("b", 1)),
+      edge("ac", port("a", 2), port("c", 1)),
+      edge("bd", port("b", 2), port("d", 0)),
+      edge("cd", port("c", 0), port("d", 1)),
+      edge("ce", port("c", 2), port("e", 0)),
+      edge("df", port("d", 2), port("f", 0)),
+      edge("ef", port("e", 1), port("f", 1)),
+      edge("eg", port("e", 2), port("g", 1)),
+      edge("fh", port("f", 2), port("h", 1)),
+      edge("gh", port("g", 2), port("h", 2)),
+    ],
+  },
+  {
+    id: "equalizer",
+    group: "Paper gadgets",
+    title: "4-equalizer",
+    description: "All four edges must point inward together or outward together.",
+    vertices: [vertex("eq", 400, 280, equalizer4)],
+    edges: [
+      edge("north", port("eq", 0), free(400, 70)),
+      edge("east", port("eq", 1), free(650, 280)),
+      edge("south", port("eq", 2), free(400, 490)),
+      edge("west", port("eq", 3), free(150, 280)),
+    ],
+  },
+];
+
+for (const graph of examples) {
+  const errors = validateGraph(graph);
+  if (errors.length > 0) throw new Error(`Invalid example ${graph.id}: ${errors.join("; ")}`);
+}
+
+export const EXAMPLES = examples;

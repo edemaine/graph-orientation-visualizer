@@ -1,0 +1,638 @@
+*
+  box-sizing: border-box
+
+:root
+  color-scheme: light
+  --paper: 244 240 230
+  --paper-deep: 233 225 210
+  --background-mid: 248 245 237
+  --surface: 255 255 255
+  --ink: 23 36 44
+  --muted: 105 114 120
+  --line: 155 164 166
+  --blue: 23 107 135
+  --cyan: 24 164 184
+  --green: 54 133 91
+  --green-strong: 34 105 67
+  --red: 196 72 63
+  --amber: 199 128 38
+  --node-surface: 250 248 241
+  --forced-surface: 229 247 247
+  --satisfied-surface: 232 244 235
+  --impossible-surface: 251 231 227
+  --victory-surface: 239 248 241
+  color: rgb(var(--ink))
+  background: rgb(var(--paper))
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+  font-synthesis: none
+  text-rendering: optimizeLegibility
+
+@media (prefers-color-scheme: dark)
+  :root
+    color-scheme: dark
+    --paper: 14 22 28
+    --paper-deep: 7 13 17
+    --background-mid: 18 29 36
+    --surface: 43 59 68
+    --ink: 229 237 238
+    --muted: 159 174 178
+    --line: 92 111 119
+    --blue: 74 180 214
+    --cyan: 49 197 211
+    --green: 91 186 132
+    --green-strong: 126 218 166
+    --red: 238 106 96
+    --amber: 231 166 74
+    --node-surface: 24 36 43
+    --forced-surface: 18 62 67
+    --satisfied-surface: 24 58 41
+    --impossible-surface: 74 32 31
+    --victory-surface: 21 49 34
+
+body
+  margin: 0
+  min-width: 320px
+  min-height: 100vh
+  background: radial-gradient(circle at 75% 20%, rgb(var(--cyan) / .07), transparent 28rem), linear-gradient(135deg, rgb(var(--paper)) 0%, rgb(var(--background-mid)) 52%, rgb(var(--paper-deep)) 100%)
+
+button, select
+  font: inherit
+
+button, a, select, [role="button"]
+  -webkit-tap-highlight-color: transparent
+
+.app-shell
+  min-height: 100vh
+  display: flex
+  flex-direction: column
+
+.masthead
+  min-height: 82px
+  display: flex
+  align-items: center
+  gap: 16px
+  padding: 16px clamp(20px, 3vw, 44px)
+  border-bottom: 1px solid rgb(var(--ink) / .13)
+  background: rgb(var(--paper) / .84)
+  backdrop-filter: blur(16px)
+
+.brand-mark
+  width: 46px
+  height: 46px
+  flex: 0 0 auto
+  display: grid
+  grid-template-columns: 1fr 1fr
+  align-items: center
+  justify-items: center
+  border: 1px solid rgb(var(--ink) / .22)
+  border-radius: 12px
+  color: rgb(var(--blue))
+  background: rgb(var(--surface) / .55)
+  box-shadow: 0 7px 22px rgb(var(--ink) / .07)
+  font-family: Georgia, serif
+  font-size: 19px
+
+  span:first-child
+    transform: translate(2px, -4px)
+
+  span:last-child
+    transform: translate(-2px, 4px)
+
+.brand-copy
+  min-width: 0
+
+  h1
+    margin: 1px 0 0
+    font-family: Georgia, "Times New Roman", serif
+    font-size: clamp(22px, 2.4vw, 31px)
+    font-weight: 600
+    letter-spacing: -.025em
+
+.eyebrow
+  margin: 0
+  color: rgb(var(--blue))
+  font-size: 10px
+  font-weight: 800
+  letter-spacing: .16em
+  text-transform: uppercase
+
+.paper-link
+  margin-left: auto
+  padding: 10px 14px
+  border: 1px solid rgb(var(--ink) / .17)
+  border-radius: 999px
+  color: rgb(var(--ink))
+  text-decoration: none
+  font-size: 13px
+  font-weight: 700
+  transition: border-color .18s ease, background .18s ease, transform .18s ease
+
+  &:hover
+    border-color: rgb(var(--blue))
+    background: rgb(var(--surface) / .65)
+    transform: translateY(-1px)
+
+.workspace
+  width: 100%
+  max-width: 1500px
+  margin: 0 auto
+  padding: clamp(18px, 2.5vw, 34px)
+  flex: 1
+  display: grid
+  grid-template-columns: minmax(270px, 330px) minmax(0, 1fr)
+  gap: clamp(18px, 2.5vw, 34px)
+
+.control-panel, .canvas-panel
+  min-width: 0
+
+.control-panel
+  display: flex
+  flex-direction: column
+  gap: 22px
+  padding: 4px 2px
+
+.field-label, .how-to h3, .legend h3
+  display: block
+  margin: 0 0 8px
+  color: $muted
+  font-size: 11px
+  font-weight: 800
+  letter-spacing: .12em
+  text-transform: uppercase
+
+.select-wrap
+  position: relative
+
+  &::after
+    content: "⌄"
+    position: absolute
+    top: 50%
+    right: 14px
+    transform: translateY(-56%)
+    pointer-events: none
+    color: $blue
+    font-size: 18px
+
+select
+  width: 100%
+  appearance: none
+  padding: 12px 42px 12px 14px
+  border: 1px solid rgba($ink, .2)
+  border-radius: 10px
+  outline: none
+  color: $ink
+  background: rgba(white, .68)
+  font-weight: 650
+
+  &:focus-visible
+    border-color: $blue
+    box-shadow: 0 0 0 3px rgba($blue, .13)
+
+.control-panel h2
+  margin: 24px 0 7px
+  font-family: Georgia, "Times New Roman", serif
+  font-size: 27px
+  font-weight: 600
+  letter-spacing: -.02em
+
+.description
+  margin: 0
+  color: $muted
+  font-size: 14px
+  line-height: 1.55
+
+.state-card
+  display: grid
+  grid-template-columns: 35px 1fr
+  gap: 12px
+  align-items: start
+  padding: 14px
+  border: 1px solid rgba($ink, .13)
+  border-radius: 13px
+  background: rgba(white, .52)
+
+  strong
+    display: block
+    margin: 0 0 3px
+    font-size: 14px
+
+  p
+    margin: 0
+    color: $muted
+    font-size: 12px
+    line-height: 1.45
+
+  &__icon
+    width: 34px
+    height: 34px
+    display: grid
+    place-items: center
+    border-radius: 50%
+    background: rgba($ink, .08)
+    font-size: 19px
+    font-weight: 800
+
+  &--success
+    border-color: rgba($green, .35)
+    background: rgba($green, .08)
+    .state-card__icon
+      color: white
+      background: $green
+
+  &--danger
+    border-color: rgba($red, .36)
+    background: rgba($red, .07)
+    .state-card__icon
+      color: white
+      background: $red
+
+  &--hint
+    border-color: rgba($cyan, .4)
+    background: rgba($cyan, .08)
+    .state-card__icon
+      color: white
+      background: $cyan
+
+.how-to ol
+  display: grid
+  gap: 10px
+  margin: 0
+  padding: 0
+  list-style: none
+
+.how-to li
+  display: grid
+  grid-template-columns: 24px 1fr
+  gap: 10px
+  align-items: start
+  color: $muted
+  font-size: 13px
+  line-height: 1.4
+
+.step-number
+  width: 23px
+  height: 23px
+  display: grid
+  place-items: center
+  border: 1px solid rgba($ink, .18)
+  border-radius: 50%
+  color: $ink
+  background: rgba(white, .46)
+  font-size: 11px
+  font-weight: 800
+
+.legend-grid
+  display: grid
+  grid-template-columns: 1fr 1fr
+  gap: 9px 12px
+
+  span
+    display: flex
+    align-items: center
+    gap: 7px
+    color: $muted
+    font-size: 12px
+
+.dot
+  width: 10px
+  height: 10px
+  border: 2px solid $line
+  border-radius: 50%
+  background: $paper
+
+  &--forced
+    border-color: $cyan
+    background: rgba($cyan, .32)
+  &--satisfied
+    border-color: $green
+    background: $green
+  &--impossible
+    border-color: $red
+    background: $red
+
+.reset-button
+  width: 100%
+  margin-top: auto
+  padding: 12px 16px
+  border: 1px solid rgba($ink, .22)
+  border-radius: 10px
+  color: $ink
+  background: transparent
+  cursor: pointer
+  font-size: 13px
+  font-weight: 750
+  transition: background .18s ease, transform .18s ease
+
+  &:hover
+    background: rgba(white, .6)
+    transform: translateY(-1px)
+
+  &:focus-visible
+    outline: 3px solid rgba($blue, .2)
+    outline-offset: 2px
+
+.canvas-panel
+  display: flex
+  flex-direction: column
+  min-height: 0
+
+.canvas-toolbar
+  min-height: 36px
+  display: flex
+  justify-content: space-between
+  align-items: center
+  gap: 14px
+  color: $muted
+  font-size: 12px
+
+.counter strong
+  color: $ink
+
+.constraint-note strong
+  color: $blue
+
+.graph-frame
+  position: relative
+  min-height: 500px
+  flex: 1
+  overflow: hidden
+  border: 1px solid rgba($ink, .15)
+  border-radius: 20px
+  background-color: rgba(255, 255, 255, .62)
+  background-image: radial-gradient(rgba($ink, .095) 1px, transparent 1px)
+  background-size: 20px 20px
+  box-shadow: 0 20px 60px rgba($ink, .09), inset 0 1px 0 rgba(white, .85)
+
+  &::before
+    content: ""
+    position: absolute
+    inset: 0
+    pointer-events: none
+    background: linear-gradient(145deg, rgba(white, .4), transparent 40%)
+
+  &--solved
+    border-color: rgba($green, .5)
+    box-shadow: 0 20px 60px rgba($ink, .09), 0 0 0 4px rgba($green, .08)
+
+.graph-canvas
+  position: relative
+  z-index: 1
+  width: 100%
+  height: 100%
+  min-height: 500px
+  display: block
+  touch-action: manipulation
+
+.edge-base, .edge-oriented, .edge-forced
+  fill: none
+  stroke-linecap: round
+  stroke-linejoin: round
+
+.edge-base
+  stroke: $line
+  stroke-width: 4
+
+.edge-oriented
+  stroke: $blue
+  stroke-width: 5
+
+#arrow path
+  fill: $blue
+
+.edge-forced
+  stroke: $cyan
+  stroke-width: 4
+  stroke-dasharray: 8 8
+  opacity: .74
+  animation: drift 1s linear infinite
+
+#ghost-arrow path
+  fill: $cyan
+
+.edge-hit
+  fill: none
+  stroke: transparent
+  stroke-width: 28
+  cursor: pointer
+  pointer-events: stroke
+
+.edge-group:focus-within .edge-base
+  stroke: $amber
+  stroke-width: 7
+
+.edge-group--conflict .edge-base
+  stroke: $red
+  stroke-dasharray: 5 5
+
+.edge-hover
+  pointer-events: none
+  fill: rgba($blue, .2)
+  stroke: rgba($blue, .72)
+  stroke-width: 2
+
+  &--2
+    fill: rgba($red, .16)
+    stroke: rgba($red, .72)
+
+.external-port
+  pointer-events: none
+  fill: $paper
+  stroke: $ink
+  stroke-width: 2
+
+.vertex
+  outline: none
+
+.vertex-halo
+  fill: transparent
+  stroke: transparent
+  stroke-width: 3
+
+.vertex-body
+  fill: #faf8f1
+  stroke: $line
+  stroke-width: 3
+  transition: fill .18s ease, stroke .18s ease, stroke-width .18s ease
+
+.vertex-label
+  pointer-events: none
+  fill: $ink
+  font-family: Georgia, "Times New Roman", serif
+  font-size: 16px
+  font-weight: 700
+
+.vertex--forced
+  .vertex-body
+    fill: #e5f7f7
+    stroke: $cyan
+    stroke-width: 4
+  .vertex-halo
+    stroke: rgba($cyan, .24)
+
+.vertex--clickable
+  cursor: pointer
+  &:hover .vertex-halo, &:focus-visible .vertex-halo
+    stroke: rgba($cyan, .55)
+    stroke-dasharray: 4 4
+  &:focus-visible .vertex-body
+    stroke-width: 6
+
+.vertex--satisfied
+  .vertex-body
+    fill: #e8f4eb
+    stroke: $green
+  .vertex-halo
+    stroke: rgba($green, .15)
+
+.vertex--impossible
+  .vertex-body
+    fill: #fbe7e3
+    stroke: $red
+    stroke-width: 4
+  .vertex-halo
+    stroke: rgba($red, .2)
+    stroke-dasharray: 4 4
+
+.vertex-badge
+  circle
+    fill: $green
+    stroke: #faf8f1
+    stroke-width: 2
+  text
+    fill: white
+    font-family: ui-sans-serif, system-ui, sans-serif
+    font-size: 12px
+    font-weight: 900
+
+.vertex--impossible .vertex-badge circle
+  fill: $red
+
+.victory-toast
+  position: absolute
+  z-index: 3
+  left: 50%
+  bottom: 22px
+  transform: translateX(-50%)
+  display: flex
+  align-items: center
+  gap: 9px
+  padding: 10px 15px
+  border: 1px solid rgba($green, .35)
+  border-radius: 999px
+  color: color.adjust($green, $lightness: -12%)
+  background: rgba(#eff8f1, .94)
+  box-shadow: 0 10px 35px rgba($ink, .14)
+  font-size: 13px
+  font-weight: 800
+  animation: arrive .28s ease-out
+
+  span
+    width: 22px
+    height: 22px
+    display: grid
+    place-items: center
+    border-radius: 50%
+    color: white
+    background: $green
+
+.keyboard-note
+  margin: 9px 2px 0
+  color: $muted
+  font-size: 11px
+  text-align: right
+
+kbd
+  padding: 1px 5px
+  border: 1px solid rgba($ink, .2)
+  border-bottom-width: 2px
+  border-radius: 4px
+  color: $ink
+  background: rgba(white, .6)
+  font-family: inherit
+  font-size: 10px
+
+@keyframes drift
+  to
+    stroke-dashoffset: -16
+
+@keyframes arrive
+  from
+    opacity: 0
+    transform: translate(-50%, 8px)
+
+@media (max-width: 850px)
+  .workspace
+    grid-template-columns: 1fr
+
+  .control-panel
+    display: grid
+    grid-template-columns: minmax(0, 1.4fr) minmax(230px, 1fr)
+    align-items: start
+
+  .state-card
+    margin-top: 20px
+
+  .reset-button
+    margin: 0
+
+  .graph-frame, .graph-canvas
+    min-height: 440px
+
+@media (max-width: 590px)
+  .masthead
+    padding: 12px 16px
+
+  .brand-mark
+    width: 40px
+    height: 40px
+
+  .eyebrow
+    display: none
+
+  .brand-copy h1
+    font-size: 20px
+
+  .paper-link
+    width: 40px
+    height: 40px
+    display: grid
+    place-items: center
+    overflow: hidden
+    padding: 0
+    color: transparent
+
+    span
+      color: $ink
+      font-size: 17px
+
+  .workspace
+    padding: 16px
+
+  .control-panel
+    display: flex
+
+  .state-card
+    margin-top: 0
+
+  .how-to, .legend
+    display: none
+
+  .canvas-toolbar
+    align-items: flex-end
+
+  .constraint-note
+    max-width: 165px
+    text-align: right
+
+  .graph-frame, .graph-canvas
+    min-height: 380px
+
+  .keyboard-note
+    display: none
+
+@media (prefers-reduced-motion: reduce)
+  *, *::before, *::after
+    scroll-behavior: auto !important
+    animation-duration: .001ms !important
+    animation-iteration-count: 1 !important
+    transition-duration: .001ms !important
