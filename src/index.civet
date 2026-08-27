@@ -1,8 +1,8 @@
 /* @refresh reload */
 { render } from solid-js/web
 
+import "@fontsource-variable/merriweather"
 import ./index.sass
 { App } from ./App.civet
 
 render => <App/>, document.getElementById('root') as HTMLElement
-

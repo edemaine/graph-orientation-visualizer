@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+dependencies:
+  '@fontsource-variable/merriweather':
+    specifier: ^5.3.0
+    version: 5.3.0
+
 devDependencies:
   '@danielx/civet':
     specifier: 0.11.5
@@ -328,6 +333,10 @@ packages:
       '@noble/hashes':
         optional: true
     dev: true
+
+  /@fontsource-variable/merriweather@5.3.0:
+    resolution: {integrity: sha512-wK7S4NtPXWUWll/sZCdub93pqSCnFkpKFbnoOE8fh+9Ut6JFjgkc9UlBxHJ0RVMkDpoWwGwMwYYTMvd3G9aAXA==}
+    dev: false
 
   /@jridgewell/gen-mapping@0.3.13:
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
