@@ -1,6 +1,7 @@
 import { For, Show, batch, createMemo, createSignal } from "solid-js";
 import { EXAMPLES } from "./examples.civet";
 import {
+  type Constraint,
   type Edge,
   type EdgeDirection,
   type EdgeEnd,
@@ -8,6 +9,7 @@ import {
   type Vertex,
   analyzeVertex,
   emptyDirections,
+  incidencesAt,
 } from "./model.civet";
 
 const NODE_RADIUS = 29;
@@ -125,11 +127,43 @@ const directionLabel = (edge: Edge, direction: 0 | 1): string => {
   return "vertex" in end ? `toward ${end.vertex}` : "toward the dangling end";
 };
 
+const constraintRule = (constraint: Constraint): string => {
+  const exact = /^(\d+)-in-(\d+)$/.exec(constraint.name);
+  if (exact) return `Exactly ${exact[1]} of ${exact[2]} edges point inward`;
+  if (constraint.name === `{0,${constraint.degree}}-in-${constraint.degree}`) {
+    return "All edges point inward or all point outward";
+  }
+  if (constraint.name === "synchronizer") {
+    return "The + ports agree, the − ports agree, and the two pairs are opposite";
+  }
+  if (constraint.name === "6-alternator") {
+    return "Neighboring ports alternate inward and outward";
+  }
+  return constraint.name;
+};
+
 export function Visualizer() {
   const [selectedId, setSelectedId] = createSignal(EXAMPLES[0].id);
   const selectedGraph = createMemo(() => EXAMPLES.find(({ id }) => id === selectedId()) ?? EXAMPLES[0]);
   const [directions, setDirections] = createSignal<Record<string, EdgeDirection>>(emptyDirections(selectedGraph()));
   const [hovered, setHovered] = createSignal<{ edge: string; zone: 0 | 1 | 2 } | null>(null);
+
+  const vertexTypes = createMemo(() => {
+    const grouped = new Map<string, { constraint: Constraint; labels: Set<string> }>();
+    for (const vertex of selectedGraph().vertices) {
+      const key = `${vertex.constraint.name}:${vertex.constraint.allowed.join(",")}`;
+      const group = grouped.get(key) ?? { constraint: vertex.constraint, labels: new Set<string>() };
+      if (vertex.label) group.labels.add(vertex.label);
+      grouped.set(key, group);
+    }
+    return [...grouped.values()].map(({ constraint, labels }) => {
+      const visibleLabels = [...labels];
+      const symbol = visibleLabels.length === 0
+        ? constraint.shortLabel
+        : `${visibleLabels.slice(0, 2).join(", ")}${visibleLabels.length > 2 ? ", …" : ""}`;
+      return { symbol, rule: constraintRule(constraint) };
+    });
+  });
 
   const analyses = createMemo(() => Object.fromEntries(
     selectedGraph().vertices.map((vertex) => [
@@ -274,6 +308,18 @@ export function Visualizer() {
             </div>
           </section>
 
+          <section class="vertex-types">
+            <h3>Vertex types</h3>
+            <table aria-label="Vertex types in this example">
+              <thead><tr><th scope="col">Shown</th><th scope="col">Rule</th></tr></thead>
+              <tbody>
+                <For each={vertexTypes()}>{({ symbol, rule }) => (
+                  <tr><td class="vertex-type-symbol">{symbol}</td><td>{rule}</td></tr>
+                )}</For>
+              </tbody>
+            </table>
+          </section>
+
           <section class="how-to">
             <h3>How to play</h3>
             <ol>
@@ -301,7 +347,6 @@ export function Visualizer() {
         <section class="canvas-panel" aria-label={`${selectedGraph().title} graph`}>
           <div class="canvas-toolbar">
             <span class="counter"><strong>{progress().oriented}</strong> / {selectedGraph().edges.length} edges</span>
-            <span class="constraint-note">Arrows point <strong>into</strong> their destination vertex</span>
           </div>
           <div class={`graph-frame${progress().solved ? " graph-frame--solved" : ""}`}>
             <svg
@@ -393,6 +438,23 @@ export function Visualizer() {
                     totalPorts: 0,
                   }; };
                   const clickable = () => { return analysis().state === "forced"; };
+                  const portLabels = () => {
+                    const groups = vertex.constraint.portGroups;
+                    if (!groups) return [];
+                    return incidencesAt(selectedGraph(), vertex.id).map((incidence) => {
+                      const geometry = edgeGeometry(selectedGraph(), incidence.edge);
+                      const endpoint = incidence.endIndex === 0 ? geometry.start : geometry.end;
+                      const direction = unit({ x: endpoint.x - vertex.x, y: endpoint.y - vertex.y });
+                      const radius = NODE_RADIUS - 8;
+                      const group = groups[incidence.port];
+                      return {
+                        group,
+                        label: group === 0 ? "+" : "−",
+                        x: direction.x * radius,
+                        y: direction.y * radius,
+                      };
+                    });
+                  };
                   return (
                     <g
                       class={`vertex vertex--${analysis().state}${clickable() ? " vertex--clickable" : ""}`}
@@ -410,13 +472,19 @@ export function Visualizer() {
                     >
                       <title>{vertex.label ? `${vertex.label}: ` : ""}{vertex.constraint.name}, {analysis().state}</title>
                       <circle class="vertex-halo" r="36" />
-                      <Show
-                        when={vertex.shape === "square"}
-                        fallback={<circle class="vertex-body" r={NODE_RADIUS} />}
-                      >
-                        <rect class="vertex-body" x={-NODE_RADIUS} y={-NODE_RADIUS} width={2 * NODE_RADIUS} height={2 * NODE_RADIUS} rx="5" />
-                      </Show>
+                      <circle class="vertex-body" r={NODE_RADIUS} display={vertex.shape === "square" ? "none" : undefined} />
+                      <rect class="vertex-body" x={-NODE_RADIUS} y={-NODE_RADIUS} width={2 * NODE_RADIUS} height={2 * NODE_RADIUS} rx="5" display={vertex.shape === "square" ? undefined : "none"} />
                       <text class="vertex-label" text-anchor="middle" dominant-baseline="central">{vertex.label ?? vertex.constraint.shortLabel}</text>
+                      <For each={portLabels()}>{(label) => (
+                        <text
+                          class={`port-pair-label port-pair-label--${label.group}`}
+                          x={label.x}
+                          y={label.y}
+                          text-anchor="middle"
+                          dominant-baseline="central"
+                          aria-hidden="true"
+                        >{label.label}</text>
+                      )}</For>
                       <Show when={analysis().state === "satisfied"}>
                         <g class="vertex-badge"><circle cx="23" cy="-23" r="10" /><text x="23" y="-22" text-anchor="middle" dominant-baseline="central">✓</text></g>
                       </Show>

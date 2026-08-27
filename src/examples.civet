@@ -14,7 +14,7 @@ const twoIn3 = symmetricConstraint(3, [2], "2∕3");
 const twoIn4 = symmetricConstraint(4, [2], "2∕4");
 const equalizer3 = symmetricConstraint(3, [0, 3], "=");
 const equalizer4 = symmetricConstraint(4, [0, 4], "=");
-const synchronizer = relationConstraint(4, ["1100", "0011"], "synchronizer", "S");
+const synchronizer = relationConstraint(4, ["1100", "0011"], "synchronizer", "S", [0, 0, 1, 1]);
 const alternator6 = relationConstraint(6, ["101010", "010101"], "6-alternator", "A");
 
 const vertex = (
@@ -220,7 +220,7 @@ const examples: GraphDefinition[] = [
     id: "synchronizer",
     group: "Paper gadgets",
     title: "Synchronizer",
-    description: "This asymmetric degree-4 relation has two complementary satisfying states.",
+    description: "The + ports form one pair and the − ports form the other. Each pair agrees internally, and the pairs take opposite directions.",
     vertices: [vertex("sync", 400, 280, synchronizer)],
     edges: [
       edge("north", port("sync", 0), free(400, 70)),

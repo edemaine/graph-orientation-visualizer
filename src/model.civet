@@ -5,6 +5,7 @@ export interface Constraint {
   shortLabel: string;
   degree: number;
   allowed: number[];
+  portGroups?: number[];
 }
 
 export interface Vertex {
@@ -83,11 +84,16 @@ export const relationConstraint = (
   bitPatterns: string[],
   name: string,
   shortLabel: string,
+  portGroups?: number[],
 ): Constraint => {
+  if (portGroups && portGroups.length !== degree) {
+    throw new Error(`${name} must assign a group to all ${degree} ports`);
+  }
   return {
     name,
     shortLabel,
     degree,
+    portGroups,
     allowed: bitPatterns.map((pattern) => {
       if (pattern.length !== degree || /[^01]/.test(pattern)) {
         throw new Error(`Invalid ${name} bit pattern: ${pattern}`);
@@ -205,6 +211,9 @@ export const validateGraph = (graph: GraphDefinition): string[] => {
     const ports = incidences.map(({ port }) => port).sort((a, b) => a - b);
     if (ports.some((port, index) => port !== index)) {
       errors.push(`${vertex.id} ports must be numbered 0 through ${vertex.constraint.degree - 1}`);
+    }
+    if (vertex.constraint.portGroups && vertex.constraint.portGroups.length !== vertex.constraint.degree) {
+      errors.push(`${vertex.id} must assign a group to every port`);
     }
   }
   return errors;

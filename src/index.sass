@@ -152,7 +152,7 @@ button, a, select, [role="button"]
   gap: 22px
   padding: 4px 2px
 
-.field-label, .how-to h3, .legend h3
+.field-label, .vertex-types h3, .how-to h3, .legend h3
   display: block
   margin: 0 0 8px
   color: rgb(var(--muted))
@@ -203,6 +203,7 @@ select
   line-height: 1.55
 
 .state-card
+  min-height: 108px
   display: grid
   grid-template-columns: 35px 1fr
   gap: 12px
@@ -253,6 +254,41 @@ select
     .state-card__icon
       color: rgb(var(--on-accent))
       background: rgb(var(--cyan))
+
+.vertex-types table
+  width: 100%
+  border-collapse: collapse
+  border: 1px solid rgb(var(--ink) / .13)
+  border-radius: 10px
+  background: rgb(var(--surface) / .4)
+  font-size: 12px
+  line-height: 1.35
+
+  th, td
+    padding: 7px 9px
+    border-bottom: 1px solid rgb(var(--ink) / .1)
+    text-align: left
+    vertical-align: top
+
+  th
+    color: rgb(var(--muted))
+    font-size: 10px
+    font-weight: 800
+    letter-spacing: .08em
+    text-transform: uppercase
+
+  tbody tr:last-child td
+    border-bottom: 0
+
+  td
+    color: rgb(var(--muted))
+
+  .vertex-type-symbol
+    width: 76px
+    color: rgb(var(--ink))
+    font-family: Georgia, "Times New Roman", serif
+    font-size: 13px
+    font-weight: 700
 
 .how-to ol
   display: grid
@@ -348,9 +384,6 @@ select
 
 .counter strong
   color: rgb(var(--ink))
-
-.constraint-note strong
-  color: rgb(var(--blue))
 
 .graph-frame
   position: relative
@@ -462,6 +495,13 @@ select
   font-family: Georgia, "Times New Roman", serif
   font-size: 16px
   font-weight: 700
+
+.port-pair-label
+  pointer-events: none
+  fill: rgb(var(--ink))
+  font-family: ui-sans-serif, system-ui, sans-serif
+  font-size: 13px
+  font-weight: 900
 
 .vertex--forced
   .vertex-body
