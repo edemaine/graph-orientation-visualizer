@@ -41,8 +41,21 @@ describe("example selection", () => {
       '.edge-hit[aria-label^="x-between-2:"]',
     );
     expect(outerCycleEdge?.getAttribute("d")).toBe(
-      "M 679 60 L 1070 60 L 1070 120 L 50 120 L 50 60 L 81 60",
+      "M 683 60 L 1070 60 L 1070 120 L 50 120 L 50 60 L 77 60",
     );
+  });
+
+  it("groups edge visuals before their interaction target for the focus glow", () => {
+    const root = document.createElement("div");
+    dispose = render(() => <Visualizer />, root);
+
+    const edge = root.querySelector(".edge-group")!;
+    const visual = edge.querySelector(".edge-visual")!;
+    const hit = edge.querySelector(".edge-hit")!;
+
+    expect(visual.querySelector(".edge-base")).not.toBeNull();
+    expect(visual.compareDocumentPosition(hit) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    expect(edge.querySelector(".edge-selection")).toBeNull();
   });
 
   it("marks the two pairs of synchronizer ports", () => {
@@ -60,6 +73,7 @@ describe("example selection", () => {
 
     const body = vertex.querySelector(".vertex-body")!;
     const firstPortLabel = vertex.querySelector(".port-pair-label")!;
+    expect(vertex.querySelector(".vertex-shape")?.contains(body)).toBe(true);
     expect(body.compareDocumentPosition(firstPortLabel) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     expect(root.querySelector(".vertex-types")?.textContent).toContain("The + ports agree");
   });

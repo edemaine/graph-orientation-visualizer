@@ -11,12 +11,18 @@
   --ink: 23 36 44
   --muted: 105 114 120
   --line: 155 164 166
+  --graph-neutral: 155 164 166
+  --canvas-background: 255 255 255
+  --canvas-grid: 23 36 44
+  --canvas-grid-opacity: .095
+  --canvas-sheen-opacity: .4
   --blue: 23 107 135
   --cyan: 24 164 184
   --green: 54 133 91
   --green-strong: 34 105 67
   --red: 196 72 63
   --amber: 199 128 38
+  --selection-glow: 213 143 48
   --node-surface: 250 248 241
   --forced-surface: 229 247 247
   --satisfied-surface: 232 244 235
@@ -38,12 +44,18 @@
     --ink: 229 237 238
     --muted: 159 174 178
     --line: 92 111 119
+    --graph-neutral: 158 166 169
+    --canvas-background: 0 0 0
+    --canvas-grid: 92 111 119
+    --canvas-grid-opacity: .28
+    --canvas-sheen-opacity: 0
     --blue: 74 180 214
     --cyan: 49 197 211
     --green: 91 186 132
     --green-strong: 126 218 166
     --red: 238 106 96
     --amber: 231 166 74
+    --selection-glow: 255 202 86
     --node-surface: 24 36 43
     --forced-surface: 18 62 67
     --satisfied-surface: 24 58 41
@@ -392,9 +404,9 @@ select
   overflow: hidden
   border: 1px solid rgb(var(--ink) / .15)
   border-radius: 20px
-  background-color: rgb(var(--surface) / .62)
-  background-image: radial-gradient(rgb(var(--ink) / .095) 1px, transparent 1px)
-  background-size: 20px 20px
+  background-color: rgb(var(--canvas-background))
+  // background-image: radial-gradient(rgb(var(--canvas-grid) / var(--canvas-grid-opacity)) 1px, transparent 1px)
+  // background-size: 20px 20px
   box-shadow: 0 20px 60px rgb(var(--ink) / .09), inset 0 1px 0 rgb(var(--surface) / .85)
 
   &::before
@@ -402,7 +414,7 @@ select
     position: absolute
     inset: 0
     pointer-events: none
-    background: linear-gradient(145deg, rgb(var(--surface) / .4), transparent 40%)
+    background: linear-gradient(145deg, rgb(var(--surface) / var(--canvas-sheen-opacity)), transparent 40%)
 
   &--solved
     border-color: rgb(var(--green) / .5)
@@ -423,22 +435,22 @@ select
   stroke-linejoin: round
 
 .edge-base
-  stroke: rgb(var(--line))
-  stroke-width: 4
+  stroke: rgb(var(--graph-neutral))
+  stroke-width: 8
 
 .edge-oriented
   stroke: rgb(var(--blue))
-  stroke-width: 5
+  stroke-width: 9
 
 #arrow path
   fill: rgb(var(--blue))
 
 .edge-forced
   stroke: rgb(var(--cyan))
-  stroke-width: 4
-  stroke-dasharray: 8 8
-  opacity: .74
-  animation: drift 1s linear infinite
+  stroke-width: 8
+  stroke-dasharray: 8 16
+  opacity: .52
+  animation: forced-pulse 2.4s linear infinite, forced-march 2.4s linear infinite
 
 #ghost-arrow path
   fill: rgb(var(--cyan))
@@ -451,9 +463,8 @@ select
   pointer-events: stroke
   outline: none
 
-.edge-group:focus-within .edge-base
-  stroke: rgb(var(--amber))
-  stroke-width: 7
+.edge-group:focus-within .edge-visual, .vertex:focus-within .vertex-shape
+  filter: drop-shadow(0 0 2px rgb(var(--selection-glow) / .9)) drop-shadow(0 0 10px rgb(var(--selection-glow) / .58))
 
 .edge-group--conflict .edge-base
   stroke: rgb(var(--red))
@@ -473,7 +484,7 @@ select
   pointer-events: none
   fill: rgb(var(--paper))
   stroke: rgb(var(--ink))
-  stroke-width: 2
+  stroke-width: 4
 
 .vertex
   outline: none
@@ -485,8 +496,8 @@ select
 
 .vertex-body
   fill: rgb(var(--node-surface))
-  stroke: rgb(var(--line))
-  stroke-width: 3
+  stroke: rgb(var(--graph-neutral))
+  stroke-width: 8
   transition: fill .18s ease, stroke .18s ease, stroke-width .18s ease
 
 .vertex-label
@@ -507,17 +518,15 @@ select
   .vertex-body
     fill: rgb(var(--forced-surface))
     stroke: rgb(var(--cyan))
-    stroke-width: 4
+    stroke-width: 8
   .vertex-halo
     stroke: rgb(var(--cyan) / .24)
 
 .vertex--clickable
   cursor: pointer
-  &:hover .vertex-halo, &:focus-visible .vertex-halo
+  &:hover .vertex-halo
     stroke: rgb(var(--cyan) / .55)
     stroke-dasharray: 4 4
-  &:focus-visible .vertex-body
-    stroke-width: 6
 
 .vertex--satisfied
   .vertex-body
@@ -530,7 +539,7 @@ select
   .vertex-body
     fill: rgb(var(--impossible-surface))
     stroke: rgb(var(--red))
-    stroke-width: 4
+    stroke-width: 8
   .vertex-halo
     stroke: rgb(var(--red) / .2)
     stroke-dasharray: 4 4
@@ -593,9 +602,18 @@ kbd
   font-family: inherit
   font-size: 10px
 
-@keyframes drift
+@keyframes forced-pulse
+  50%
+    opacity: .78
+
+@keyframes forced-march
   to
-    stroke-dashoffset: -16
+    stroke-dashoffset: -24
+
+@media (prefers-reduced-motion: reduce)
+  .edge-forced
+    animation: none
+    opacity: .65
 
 @keyframes arrive
   from
