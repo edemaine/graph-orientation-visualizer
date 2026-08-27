@@ -296,7 +296,6 @@ export function Visualizer() {
                 )}</For>
               </select>
             </div>
-            <h2>{selectedGraph().title}</h2>
             <p class="description">{selectedGraph().description}</p>
           </section>
 
@@ -347,9 +346,6 @@ export function Visualizer() {
         </aside>
 
         <section class="canvas-panel" aria-label={`${selectedGraph().title} graph`}>
-          <div class="canvas-toolbar">
-            <span class="counter"><strong>{progress().oriented}</strong> / {selectedGraph().edges.length} edges</span>
-          </div>
           <div class={`graph-frame${progress().solved ? " graph-frame--solved" : ""}`}>
             <svg
               class="graph-canvas"
@@ -508,7 +504,10 @@ export function Visualizer() {
               <div class="victory-toast" role="status"><span>✓</span> Orientation complete</div>
             </Show>
           </div>
-          <p class="keyboard-note">Keyboard: focus an edge and press <kbd>Enter</kbd> to cycle it, or <kbd>Delete</kbd> to clear it.</p>
+          <div class="canvas-footer">
+            <span class="counter"><strong>{progress().oriented}</strong> / {selectedGraph().edges.length} edges</span>
+            <p class="keyboard-note">Keyboard: focus an edge and press <kbd>Enter</kbd> to cycle it, or <kbd>Delete</kbd> to clear it.</p>
+          </div>
         </section>
       </main>
     </div>

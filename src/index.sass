@@ -202,15 +202,8 @@ select
     border-color: rgb(var(--primary))
     box-shadow: 0 0 0 3px rgb(var(--primary) / .13)
 
-.control-panel h2
-  margin: 24px 0 7px
-  font-family: var(--font-family)
-  font-size: 27px
-  font-weight: 600
-  letter-spacing: -.02em
-
 .description
-  margin: 0
+  margin: 12px 0 0 20px
   color: rgb(var(--muted))
   font-size: 14px
   line-height: 1.55
@@ -386,14 +379,17 @@ select
   flex-direction: column
   min-height: 0
 
-.canvas-toolbar
-  min-height: 36px
+.canvas-footer
   display: flex
   justify-content: space-between
   align-items: center
   gap: 14px
+  margin: 9px 2px 0
   color: rgb(var(--muted))
   font-size: 12px
+
+.counter
+  white-space: nowrap
 
 .counter strong
   color: rgb(var(--ink))
@@ -588,7 +584,7 @@ select
     background: rgb(var(--green))
 
 .keyboard-note
-  margin: 9px 2px 0
+  margin: 0
   color: rgb(var(--muted))
   font-size: 11px
   text-align: right
@@ -677,9 +673,6 @@ kbd
 
   .how-to, .legend
     display: none
-
-  .canvas-toolbar
-    align-items: flex-end
 
   .constraint-note
     max-width: 165px

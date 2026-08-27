@@ -10,18 +10,19 @@ afterEach(() => {
 });
 
 describe("example selection", () => {
-  it("replaces the title and SVG diagram when the selection changes", () => {
+  it("replaces the selected example and SVG diagram without repeating its title", () => {
     const root = document.createElement("div");
     dispose = render(() => <Visualizer />, root);
 
     const select = root.querySelector<HTMLSelectElement>("#example")!;
-    expect(root.querySelector("h2")?.textContent).toBe("Directed cycle");
+    expect(select.selectedOptions[0].textContent).toBe("Directed cycle");
+    expect(root.querySelector(".control-panel h2")).toBeNull();
     expect(root.querySelectorAll(".edge-hit")).toHaveLength(4);
 
     select.value = "one-in-four";
     select.dispatchEvent(new Event("change", { bubbles: true }));
 
-    expect(root.querySelector("h2")?.textContent).toBe("1-in-4 simulation");
+    expect(select.selectedOptions[0].textContent).toBe("1-in-4 simulation");
     expect(root.querySelectorAll(".edge-hit")).toHaveLength(5);
   });
 
@@ -56,6 +57,19 @@ describe("example selection", () => {
     expect(visual.querySelector(".edge-base")).not.toBeNull();
     expect(visual.compareDocumentPosition(hit) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     expect(edge.querySelector(".edge-selection")).toBeNull();
+  });
+
+  it("keeps edge progress in the footer below the graph", () => {
+    const root = document.createElement("div");
+    dispose = render(() => <Visualizer />, root);
+
+    const frame = root.querySelector(".graph-frame")!;
+    const footer = root.querySelector(".canvas-footer")!;
+
+    expect(frame.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    expect(footer.querySelector(".counter")?.textContent).toContain("0 / 4 edges");
+    expect(footer.querySelector(".keyboard-note")).not.toBeNull();
+    expect(root.querySelector(".canvas-toolbar")).toBeNull();
   });
 
   it("marks the two pairs of synchronizer ports", () => {
