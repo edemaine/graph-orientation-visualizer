@@ -8,6 +8,7 @@
   --paper-deep: 236 228 243
   --background-mid: 251 248 253
   --surface: 255 255 255
+  --menu-surface: 255 255 255
   --on-accent: 255 255 255
   --ink: 39 29 47
   --muted: 111 99 119
@@ -42,6 +43,7 @@
     --paper-deep: 10 6 17
     --background-mid: 25 18 35
     --surface: 55 43 68
+    --menu-surface: 20 14 28
     --ink: 240 233 244
     --muted: 177 163 185
     --line: 106 92 117
@@ -193,6 +195,17 @@ select
   &:focus-visible
     border-color: rgb(var(--primary))
     box-shadow: 0 0 0 3px rgb(var(--primary) / .13)
+
+optgroup, option
+  background-color: rgb(var(--menu-surface))
+
+optgroup
+  color: rgb(var(--primary))
+  font-weight: 800
+
+option
+  color: rgb(var(--ink))
+  font-weight: 600
 
 .description
   margin: 12px 0 0 20px
