@@ -94,41 +94,33 @@ button, a, select, [role="button"]
   width: 46px
   height: 46px
   flex: 0 0 auto
-  display: grid
-  grid-template-columns: 1fr 1fr
-  align-items: center
-  justify-items: center
   border: 1px solid rgb(var(--ink) / .22)
   border-radius: 12px
-  color: rgb(var(--primary))
   background: rgb(var(--surface) / .55)
   box-shadow: 0 7px 22px rgb(var(--ink) / .07)
-  font-family: var(--font-family)
-  font-size: 19px
-
-  span:first-child
-    transform: translate(2px, -4px)
-
-  span:last-child
-    transform: translate(-2px, 4px)
+  object-fit: contain
 
 .brand-copy
   min-width: 0
 
   h1
-    margin: 1px 0 0
+    margin: 0
     font-family: var(--font-family)
     font-size: clamp(22px, 2.4vw, 31px)
     font-weight: 600
-    letter-spacing: -.025em
+    line-height: 1.1
 
-.eyebrow
-  margin: 0
-  color: rgb(var(--primary))
-  font-size: 10px
-  font-weight: 800
-  letter-spacing: .16em
-  text-transform: uppercase
+.title-small-caps
+  font-size: .76em
+  letter-spacing: .03em
+
+  > span
+    white-space: nowrap
+
+.title-initial
+  font-size: 1.3158em
+  font-weight: inherit
+  letter-spacing: .01em
 
 .paper-link
   margin-left: auto
@@ -642,9 +634,6 @@ kbd
   .brand-mark
     width: 40px
     height: 40px
-
-  .eyebrow
-    display: none
 
   .brand-copy h1
     font-size: 20px

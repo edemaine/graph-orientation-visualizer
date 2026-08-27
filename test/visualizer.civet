@@ -10,6 +10,18 @@ afterEach(() => {
 });
 
 describe("example selection", () => {
+  it("uses the favicon artwork as the masthead brand mark", () => {
+    const root = document.createElement("div");
+    dispose = render(() => <Visualizer />, root);
+
+    const mark = root.querySelector<HTMLImageElement>("img.brand-mark");
+    expect(mark?.getAttribute("src")).toBe("/favicon.svg");
+    expect(mark?.getAttribute("alt")).toBe("");
+    expect(root.querySelector("h1")?.getAttribute("aria-label")).toBe("Graph Orientation Playground");
+    expect(root.querySelector(".title-small-caps")?.textContent).toBe("GRAPH ORIENTATION PLAYGROUND");
+    expect(root.textContent).not.toContain("Interactive constraint lab");
+  });
+
   it("replaces the selected example and SVG diagram without repeating its title", () => {
     const root = document.createElement("div");
     dispose = render(() => <Visualizer />, root);

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <style>
+    :root { color: #693f99; }
+    @media (prefers-color-scheme: dark) { :root { color: #b889ff; } }
+  </style>
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="4">
+    <path d="M3 9h17" />
+    <path d="M29 23H12" />
+  </g>
+  <!-- Arrowhead geometry from Cocreate's client/DrawApp.coffee:
+       https://github.com/edemaine/cocreate/blob/main/client/DrawApp.coffee -->
+  <g fill="currentColor">
+    <path d="M0-1 10 3.854A1.252 1.252 0 0 1 10 6.146L0 11Z" transform="translate(19 4)" />
+    <path d="M0-1 10 3.854A1.252 1.252 0 0 1 10 6.146L0 11Z" transform="translate(13 18) scale(-1 1)" />
+  </g>
+</svg>

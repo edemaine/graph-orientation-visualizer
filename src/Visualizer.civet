@@ -271,10 +271,15 @@ export function Visualizer() {
   return (
     <div class="app-shell">
       <header class="masthead">
-        <div class="brand-mark" aria-hidden="true"><span>↗</span><span>↙</span></div>
+        <img class="brand-mark" src="/favicon.svg" alt="" aria-hidden="true" />
         <div class="brand-copy">
-          <p class="eyebrow">Interactive constraint lab</p>
-          <h1>Graph Orientation Playground</h1>
+          <h1 aria-label="Graph Orientation Playground">
+            <span class="title-small-caps" aria-hidden="true">
+              <span><span class="title-initial">G</span>RAPH</span>{" "}
+              <span><span class="title-initial">O</span>RIENTATION</span>{" "}
+              <span><span class="title-initial">P</span>LAYGROUND</span>
+            </span>
+          </h1>
         </div>
         <a class="paper-link" href="https://arxiv.org/abs/2603.03488" target="_blank" rel="noreferrer">
           Read the paper <span aria-hidden="true">↗</span>
