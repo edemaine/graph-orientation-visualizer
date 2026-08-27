@@ -3,27 +3,27 @@
 
 :root
   color-scheme: light
-  --paper: 244 240 230
-  --paper-deep: 233 225 210
-  --background-mid: 248 245 237
+  --paper: 247 243 250
+  --paper-deep: 236 228 243
+  --background-mid: 251 248 253
   --surface: 255 255 255
   --on-accent: 255 255 255
-  --ink: 23 36 44
-  --muted: 105 114 120
-  --line: 155 164 166
+  --ink: 39 29 47
+  --muted: 111 99 119
+  --line: 166 155 171
   --graph-neutral: 155 164 166
   --canvas-background: 255 255 255
-  --canvas-grid: 23 36 44
+  --canvas-grid: 39 29 47
   --canvas-grid-opacity: .095
   --canvas-sheen-opacity: .4
-  --blue: 23 107 135
+  --primary: 105 63 153
   --cyan: 24 164 184
   --green: 54 133 91
   --green-strong: 34 105 67
   --red: 196 72 63
   --amber: 199 128 38
   --selection-glow: 213 143 48
-  --node-surface: 250 248 241
+  --node-surface: 252 249 253
   --forced-surface: 229 247 247
   --satisfied-surface: 232 244 235
   --impossible-surface: 251 231 227
@@ -37,26 +37,26 @@
 @media (prefers-color-scheme: dark)
   :root
     color-scheme: dark
-    --paper: 14 22 28
-    --paper-deep: 7 13 17
-    --background-mid: 18 29 36
-    --surface: 43 59 68
-    --ink: 229 237 238
-    --muted: 159 174 178
-    --line: 92 111 119
+    --paper: 18 13 27
+    --paper-deep: 10 6 17
+    --background-mid: 25 18 35
+    --surface: 55 43 68
+    --ink: 240 233 244
+    --muted: 177 163 185
+    --line: 106 92 117
     --graph-neutral: 158 166 169
     --canvas-background: 0 0 0
-    --canvas-grid: 92 111 119
+    --canvas-grid: 106 92 117
     --canvas-grid-opacity: .28
     --canvas-sheen-opacity: 0
-    --blue: 74 180 214
+    --primary: 184 137 255
     --cyan: 49 197 211
     --green: 91 186 132
     --green-strong: 126 218 166
     --red: 238 106 96
     --amber: 231 166 74
     --selection-glow: 255 202 86
-    --node-surface: 24 36 43
+    --node-surface: 29 23 36
     --forced-surface: 18 62 67
     --satisfied-surface: 24 58 41
     --impossible-surface: 74 32 31
@@ -66,7 +66,7 @@ body
   margin: 0
   min-width: 320px
   min-height: 100vh
-  background: radial-gradient(circle at 75% 20%, rgb(var(--cyan) / .07), transparent 28rem), linear-gradient(135deg, rgb(var(--paper)) 0%, rgb(var(--background-mid)) 52%, rgb(var(--paper-deep)) 100%)
+  background: radial-gradient(circle at 75% 20%, rgb(var(--primary) / .09), transparent 28rem), linear-gradient(135deg, rgb(var(--paper)) 0%, rgb(var(--background-mid)) 52%, rgb(var(--paper-deep)) 100%)
 
 button, select
   font: inherit
@@ -99,7 +99,7 @@ button, a, select, [role="button"]
   justify-items: center
   border: 1px solid rgb(var(--ink) / .22)
   border-radius: 12px
-  color: rgb(var(--blue))
+  color: rgb(var(--primary))
   background: rgb(var(--surface) / .55)
   box-shadow: 0 7px 22px rgb(var(--ink) / .07)
   font-family: Georgia, serif
@@ -123,7 +123,7 @@ button, a, select, [role="button"]
 
 .eyebrow
   margin: 0
-  color: rgb(var(--blue))
+  color: rgb(var(--primary))
   font-size: 10px
   font-weight: 800
   letter-spacing: .16em
@@ -141,7 +141,7 @@ button, a, select, [role="button"]
   transition: border-color .18s ease, background .18s ease, transform .18s ease
 
   &:hover
-    border-color: rgb(var(--blue))
+    border-color: rgb(var(--primary))
     background: rgb(var(--surface) / .65)
     transform: translateY(-1px)
 
@@ -183,7 +183,7 @@ button, a, select, [role="button"]
     right: 14px
     transform: translateY(-56%)
     pointer-events: none
-    color: rgb(var(--blue))
+    color: rgb(var(--primary))
     font-size: 18px
 
 select
@@ -198,8 +198,8 @@ select
   font-weight: 650
 
   &:focus-visible
-    border-color: rgb(var(--blue))
-    box-shadow: 0 0 0 3px rgb(var(--blue) / .13)
+    border-color: rgb(var(--primary))
+    box-shadow: 0 0 0 3px rgb(var(--primary) / .13)
 
 .control-panel h2
   margin: 24px 0 7px
@@ -377,7 +377,7 @@ select
     transform: translateY(-1px)
 
   &:focus-visible
-    outline: 3px solid rgb(var(--blue) / .2)
+    outline: 3px solid rgb(var(--primary) / .2)
     outline-offset: 2px
 
 .canvas-panel
@@ -439,11 +439,11 @@ select
   stroke-width: 8
 
 .edge-oriented
-  stroke: rgb(var(--blue))
+  stroke: rgb(var(--primary))
   stroke-width: 9
 
 #arrow path
-  fill: rgb(var(--blue))
+  fill: rgb(var(--primary))
 
 .edge-forced
   stroke: rgb(var(--cyan))
@@ -472,8 +472,8 @@ select
 
 .edge-hover
   pointer-events: none
-  fill: rgb(var(--blue) / .2)
-  stroke: rgb(var(--blue) / .72)
+  fill: rgb(var(--primary) / .2)
+  stroke: rgb(var(--primary) / .72)
   stroke-width: 2
 
   &--2
