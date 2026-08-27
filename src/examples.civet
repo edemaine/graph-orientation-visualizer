@@ -22,7 +22,7 @@ const vertex = (
   x: number,
   y: number,
   constraint: Vertex["constraint"],
-  options: Pick<Vertex, "label" | "shape"> = {},
+  options: Pick<Vertex, "label" | "annotation"> = {},
 ): Vertex => {
   return { id, x, y, constraint, ...options };
 };
@@ -43,11 +43,11 @@ const routedEdge = (
   route: NonNullable<Edge["route"]>,
 ): Edge => { return { id, ends: [a, b], route }; };
 
-const FIGURE_4_GRID_SIZE = 60;
+const FIGURE_4_GRID_SIZE = 80;
 const figure4Point = (column: number, row: number) => {
   return {
-    x: 50 + FIGURE_4_GRID_SIZE * column,
-    y: 780 - FIGURE_4_GRID_SIZE * row,
+    x: 70 + FIGURE_4_GRID_SIZE * column,
+    y: 1020 - FIGURE_4_GRID_SIZE * row,
   };
 };
 const figure4Route = (...points: [number, number][]) => {
@@ -58,7 +58,7 @@ const figure4Vertex = (
   column: number,
   row: number,
   constraint: Vertex["constraint"],
-  options: Pick<Vertex, "label" | "shape"> = {},
+  options: Pick<Vertex, "label" | "annotation"> = {},
 ) => {
   const { x, y } = figure4Point(column, row);
   return vertex(id, x, y, constraint, options);
@@ -134,25 +134,25 @@ const examples: GraphDefinition[] = [
     id: "figure-4-one-in-three-go",
     group: "Full graphs",
     title: "Horiyama et al. Figure 4",
-    description: "The graph for (x ∨ y ∨ z̄) ∧ (x ∨ z ∨ w). Literal vertices need 0 or 3 incoming edges; C₁ and C₂ need one incoming, while the square negated-clause vertices need one outgoing.",
-    viewBox: [0, 0, 1120, 780],
+    description: "The graph for (x ∨ y ∨ z̄) ∧ (x ∨ z ∨ w). Literal vertices need 0 or 3 incoming edges; clause vertices need one incoming, and negated-clause vertices need one outgoing.",
+    viewBox: [0, 0, 1500, 1020],
     vertices: [
-      figure4Vertex("x1", 1, 12, equalizer3, { label: "x" }),
-      figure4Vertex("nx1", 2, 12, equalizer3, { label: "x̄" }),
-      figure4Vertex("x2", 9, 12, equalizer3, { label: "x" }),
-      figure4Vertex("nx2", 10, 12, equalizer3, { label: "x̄" }),
-      figure4Vertex("y1", 4, 10, equalizer3, { label: "y" }),
-      figure4Vertex("ny1", 5, 10, equalizer3, { label: "ȳ" }),
-      figure4Vertex("nz1", 7, 7, equalizer3, { label: "z̄" }),
-      figure4Vertex("z1", 8, 7, equalizer3, { label: "z" }),
-      figure4Vertex("z2", 12, 8, equalizer3, { label: "z" }),
-      figure4Vertex("nz2", 13, 8, equalizer3, { label: "z̄" }),
-      figure4Vertex("w1", 15, 6, equalizer3, { label: "w" }),
-      figure4Vertex("nw1", 16, 6, equalizer3, { label: "w̄" }),
-      figure4Vertex("c1", 2, 1, oneIn3, { label: "C₁" }),
-      figure4Vertex("nc1", 7, 1, twoIn3, { label: "C̄₁", shape: "square" }),
-      figure4Vertex("c2", 10, 1, oneIn3, { label: "C₂" }),
-      figure4Vertex("nc2", 15, 1, twoIn3, { label: "C̄₂", shape: "square" }),
+      figure4Vertex("x1", 1, 12, equalizer3, { annotation: { text: "x", corner: "top-left" } }),
+      figure4Vertex("nx1", 2, 12, equalizer3, { annotation: { text: "x̄", corner: "top-right" } }),
+      figure4Vertex("x2", 9, 12, equalizer3, { annotation: { text: "x", corner: "top-left" } }),
+      figure4Vertex("nx2", 10, 12, equalizer3, { annotation: { text: "x̄", corner: "top-right" } }),
+      figure4Vertex("y1", 4, 10, equalizer3, { annotation: { text: "y", corner: "top-left" } }),
+      figure4Vertex("ny1", 5, 10, equalizer3, { annotation: { text: "ȳ", corner: "top-right" } }),
+      figure4Vertex("nz1", 7, 7, equalizer3, { annotation: { text: "z̄", corner: "top-left" } }),
+      figure4Vertex("z1", 8, 7, equalizer3, { annotation: { text: "z", corner: "top-right" } }),
+      figure4Vertex("z2", 12, 8, equalizer3, { annotation: { text: "z", corner: "top-left" } }),
+      figure4Vertex("nz2", 13, 8, equalizer3, { annotation: { text: "z̄", corner: "top-right" } }),
+      figure4Vertex("w1", 15, 6, equalizer3, { annotation: { text: "w", corner: "top-left" } }),
+      figure4Vertex("nw1", 16, 6, equalizer3, { annotation: { text: "w̄", corner: "top-right" } }),
+      figure4Vertex("c1", 2, 1, oneIn3, { annotation: { text: "C₁", corner: "bottom-left" } }),
+      figure4Vertex("nc1", 7, 1, twoIn3, { annotation: { text: "C̄₁", corner: "bottom-right" } }),
+      figure4Vertex("c2", 10, 1, oneIn3, { annotation: { text: "C₂", corner: "bottom-left" } }),
+      figure4Vertex("nc2", 15, 1, twoIn3, { annotation: { text: "C̄₂", corner: "bottom-right" } }),
     ],
     edges: [
       edge("x-pair-1", port("x1", 0), port("nx1", 0)),

@@ -126,8 +126,8 @@ describe("example suite", () => {
       ...graph.edges.flatMap(({ route }) => route ?? []),
     ];
     for (const { x, y } of gridPoints) {
-      expect(Number.isInteger((x - 50) / 60)).toBe(true);
-      expect(Number.isInteger((780 - y) / 60)).toBe(true);
+      expect(Number.isInteger((x - 70) / 80)).toBe(true);
+      expect(Number.isInteger((1020 - y) / 80)).toBe(true);
     }
   });
 });

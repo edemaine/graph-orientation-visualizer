@@ -49,13 +49,25 @@ describe("example selection", () => {
     const vertexTypeRows = root.querySelectorAll(".vertex-types tbody tr");
     expect(vertexTypeRows).toHaveLength(3);
     expect(root.querySelector(".vertex-types")?.textContent).toContain("All edges point inward or all point outward");
+    expect([...root.querySelectorAll(".vertex-label")].map(({ textContent }) => textContent)).toContain("=");
+    expect(root.querySelectorAll(".vertex-label--single-character")).toHaveLength(12);
+    expect([...root.querySelectorAll(".vertex-label")].map(({ textContent }) => textContent)).toContain("1∕3");
+    expect([...root.querySelectorAll(".vertex-label")].map(({ textContent }) => textContent)).toContain("2∕3");
+    expect(root.querySelectorAll(".vertex-annotation")).toHaveLength(16);
+    expect(root.querySelectorAll(".vertex-body")).toHaveLength(16);
+    expect(root.querySelector(".vertex-shape rect")).toBeNull();
 
     const outerCycleEdge = root.querySelector<SVGPathElement>(
       '.edge-hit[aria-label^="x-between-2:"]',
     );
     expect(outerCycleEdge?.getAttribute("d")).toBe(
-      "M 683 60 L 1070 60 L 1070 120 L 50 120 L 50 60 L 77 60",
+      "M 903 60 L 1430 60 L 1430 140 L 70 140 L 70 60 L 117 60",
     );
+
+    const literalPairEdge = root.querySelector<SVGPathElement>(
+      '.edge-hit[aria-label^="x-pair-1:"]',
+    );
+    expect(literalPairEdge?.getAttribute("d")).toBe("M 183 60 L 197 60");
   });
 
   it("groups edge visuals before their interaction target for the focus glow", () => {
@@ -93,6 +105,7 @@ describe("example selection", () => {
     select.dispatchEvent(new Event("change", { bubbles: true }));
 
     const vertex = root.querySelector(".vertex")!;
+    expect(vertex.querySelector(".vertex-label--single-character")?.textContent).toBe("S");
     expect(vertex.querySelectorAll(".port-pair-label--0")).toHaveLength(2);
     expect(vertex.querySelectorAll(".port-pair-label--1")).toHaveLength(2);
     expect([...vertex.querySelectorAll(".port-pair-label")].map(({ textContent }) => textContent)).toEqual(["+", "+", "−", "−"]);
@@ -102,5 +115,16 @@ describe("example selection", () => {
     expect(vertex.querySelector(".vertex-shape")?.contains(body)).toBe(true);
     expect(body.compareDocumentPosition(firstPortLabel) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     expect(root.querySelector(".vertex-types")?.textContent).toContain("The + ports agree");
+  });
+
+  it("enlarges the alternator's one-character label", () => {
+    const root = document.createElement("div");
+    dispose = render(() => <Visualizer />, root);
+
+    const select = root.querySelector<HTMLSelectElement>("#example")!;
+    select.value = "alternator";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(root.querySelector(".vertex-label--single-character")?.textContent).toBe("A");
   });
 });

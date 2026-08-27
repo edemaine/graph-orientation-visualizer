@@ -14,7 +14,10 @@ export interface Vertex {
   y: number;
   constraint: Constraint;
   label?: string;
-  shape?: "circle" | "square";
+  annotation?: {
+    text: string;
+    corner?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  };
 }
 
 export interface VertexEnd {
