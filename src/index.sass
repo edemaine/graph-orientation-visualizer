@@ -172,14 +172,21 @@ button, a, select, [role="button"]
   position: relative
 
   &::after
-    content: "⌄"
+    content: "▾"
     position: absolute
     top: 50%
-    right: 14px
-    transform: translateY(-56%)
+    right: 10px
+    width: 24px
+    height: 24px
+    display: grid
+    place-items: center
+    transform: translateY(-50%)
     pointer-events: none
     color: rgb(var(--primary))
-    font-size: 18px
+    font-family: ui-sans-serif, system-ui, sans-serif
+    font-size: 17px
+    font-weight: 700
+    line-height: 1
 
 select
   width: 100%
