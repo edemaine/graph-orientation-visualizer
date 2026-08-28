@@ -36,34 +36,40 @@
   font-synthesis: none
   text-rendering: optimizeLegibility
 
+@mixin dark-theme
+  color-scheme: dark
+  --paper: 18 13 27
+  --paper-deep: 10 6 17
+  --background-mid: 25 18 35
+  --surface: 55 43 68
+  --menu-surface: 20 14 28
+  --ink: 240 233 244
+  --muted: 177 163 185
+  --line: 106 92 117
+  --graph-neutral: 158 166 169
+  --canvas-background: 0 0 0
+  --canvas-grid: 106 92 117
+  --canvas-grid-opacity: .28
+  --canvas-sheen-opacity: 0
+  --primary: 184 137 255
+  --cyan: 49 197 211
+  --green: 91 186 132
+  --green-strong: 126 218 166
+  --red: 238 106 96
+  --amber: 231 166 74
+  --selection-glow: 255 202 86
+  --node-surface: 29 23 36
+  --forced-surface: 18 62 67
+  --satisfied-surface: 24 58 41
+  --impossible-surface: 74 32 31
+  --victory-surface: 21 49 34
+
 @media (prefers-color-scheme: dark)
-  :root
-    color-scheme: dark
-    --paper: 18 13 27
-    --paper-deep: 10 6 17
-    --background-mid: 25 18 35
-    --surface: 55 43 68
-    --menu-surface: 20 14 28
-    --ink: 240 233 244
-    --muted: 177 163 185
-    --line: 106 92 117
-    --graph-neutral: 158 166 169
-    --canvas-background: 0 0 0
-    --canvas-grid: 106 92 117
-    --canvas-grid-opacity: .28
-    --canvas-sheen-opacity: 0
-    --primary: 184 137 255
-    --cyan: 49 197 211
-    --green: 91 186 132
-    --green-strong: 126 218 166
-    --red: 238 106 96
-    --amber: 231 166 74
-    --selection-glow: 255 202 86
-    --node-surface: 29 23 36
-    --forced-surface: 18 62 67
-    --satisfied-surface: 24 58 41
-    --impossible-surface: 74 32 31
-    --victory-surface: 21 49 34
+  :root:not([data-theme])
+    @include dark-theme
+
+:root[data-theme="dark"]
+  @include dark-theme
 
 body
   margin: 0
@@ -124,13 +130,18 @@ button, a, select, [role="button"]
   font-weight: inherit
   letter-spacing: .01em
 
-.paper-link
+.masthead-actions
   margin-left: auto
+  display: flex
+  align-items: center
+  gap: 9px
+
+.paper-link, .theme-toggle
   padding: 10px 14px
   border: 1px solid rgb(var(--ink) / .17)
   border-radius: 999px
   color: rgb(var(--ink))
-  text-decoration: none
+  background: transparent
   font-size: 13px
   font-weight: 700
   transition: border-color .18s ease, background .18s ease, transform .18s ease
@@ -139,6 +150,28 @@ button, a, select, [role="button"]
     border-color: rgb(var(--primary))
     background: rgb(var(--surface) / .65)
     transform: translateY(-1px)
+
+  &:focus-visible
+    outline: 3px solid rgb(var(--primary) / .2)
+    outline-offset: 2px
+
+.paper-link
+  text-decoration: none
+
+.theme-toggle
+  width: 40px
+  height: 40px
+  display: grid
+  place-items: center
+  padding: 0
+  cursor: pointer
+
+  &__icon
+    width: 1.15em
+    font-family: ui-sans-serif, system-ui, sans-serif
+    font-size: 17px
+    line-height: 1
+    text-align: center
 
 .workspace
   width: 100%
