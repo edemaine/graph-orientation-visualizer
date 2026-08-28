@@ -344,6 +344,29 @@ export function Visualizer() {
             <p class="description">{selectedGraph().description}</p>
           </section>
 
+          <div class="vertex-info">
+            <section class="vertex-types">
+              <h3>Vertex types</h3>
+              <dl class="vertex-type-list" aria-label="Vertex types in this example">
+                <For each={vertexTypes()}>{({ symbol, rule }) => (
+                  <div class="vertex-type">
+                    <dt class="vertex-type-symbol"><span>{symbol}</span></dt>
+                    <dd>{rule}</dd>
+                  </div>
+                )}</For>
+              </dl>
+            </section>
+
+            <section class="legend" aria-label="Vertex state legend">
+              <div class="legend-grid">
+                <span><i class="dot dot--open" />Open</span>
+                <span><i class="dot dot--forced" />Forced</span>
+                <span><i class="dot dot--satisfied" />Satisfied</span>
+                <span><i class="dot dot--impossible" />Impossible</span>
+              </div>
+            </section>
+          </div>
+
           <section class={`state-card state-card--${stateSummary().tone}`} aria-live="polite">
             <div class="state-card__icon" aria-hidden="true">
               {progress().solved ? "✓" : progress().impossible || progress().edgeConflicts ? "!" : progress().forced ? "↯" : "·"}
@@ -354,18 +377,6 @@ export function Visualizer() {
             </div>
           </section>
 
-          <section class="vertex-types">
-            <h3>Vertex types</h3>
-            <table aria-label="Vertex types in this example">
-              <thead><tr><th scope="col">Shown</th><th scope="col">Rule</th></tr></thead>
-              <tbody>
-                <For each={vertexTypes()}>{({ symbol, rule }) => (
-                  <tr><td class="vertex-type-symbol">{symbol}</td><td>{rule}</td></tr>
-                )}</For>
-              </tbody>
-            </table>
-          </section>
-
           <section class="how-to">
             <h3>How to play</h3>
             <ol>
@@ -373,16 +384,6 @@ export function Visualizer() {
               <li><span class="step-number">2</span><span>Click its middle third to remove the arrow.</span></li>
               <li><span class="step-number">3</span><span>Click a cyan vertex to apply its forced moves.</span></li>
             </ol>
-          </section>
-
-          <section class="legend" aria-label="Vertex state legend">
-            <h3>Vertex feedback</h3>
-            <div class="legend-grid">
-              <span><i class="dot dot--open" />Open</span>
-              <span><i class="dot dot--forced" />Forced</span>
-              <span><i class="dot dot--satisfied" />Satisfied</span>
-              <span><i class="dot dot--impossible" />Impossible</span>
-            </div>
           </section>
 
           <button class="reset-button" type="button" onClick={() => setDirections(emptyDirections(selectedGraph()))}>

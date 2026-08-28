@@ -68,8 +68,10 @@ describe("example selection", () => {
     select.value = "figure-4-one-in-three-go";
     select.dispatchEvent(new Event("change", { bubbles: true }));
 
-    const vertexTypeRows = root.querySelectorAll(".vertex-types tbody tr");
+    const vertexTypeRows = root.querySelectorAll(".vertex-type-list .vertex-type");
     expect(vertexTypeRows).toHaveLength(3);
+    expect(root.querySelectorAll(".vertex-type-symbol > span")).toHaveLength(3);
+    expect(root.querySelector(".vertex-types table")).toBeNull();
     expect(root.querySelector(".vertex-types")?.textContent).toContain("All edges point inward or all point outward");
     expect([...root.querySelectorAll(".vertex-label")].map(({ textContent }) => textContent)).toContain("=");
     expect(root.querySelectorAll(".vertex-label--single-character")).toHaveLength(12);
@@ -90,6 +92,24 @@ describe("example selection", () => {
       '.edge-hit[aria-label^="x-pair-1:"]',
     );
     expect(literalPairEdge?.getAttribute("d")).toBe("M 183 60 L 197 60");
+  });
+
+  it("places vertex feedback after the vertex type table", () => {
+    const root = document.createElement("div");
+    dispose = render(() => <Visualizer />, root);
+
+    const types = root.querySelector(".vertex-types")!;
+    const feedback = root.querySelector(".legend")!;
+    expect(types.parentElement?.classList.contains("vertex-info")).toBe(true);
+    expect(feedback.parentElement).toBe(types.parentElement);
+    expect(feedback.querySelector("h3")).toBeNull();
+    expect(feedback.querySelectorAll(".legend-grid > span")).toHaveLength(4);
+    expect(types.compareDocumentPosition(feedback) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+
+    const status = root.querySelector(".state-card")!;
+    const howTo = root.querySelector(".how-to")!;
+    expect(feedback.compareDocumentPosition(status) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    expect(status.compareDocumentPosition(howTo) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
   });
 
   it("groups edge visuals before their interaction target for the focus glow", () => {

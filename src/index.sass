@@ -253,6 +253,10 @@ option
   font-size: 14px
   line-height: 1.55
 
+.vertex-info
+  display: grid
+  gap: 10px
+
 .state-card
   min-height: 108px
   display: grid
@@ -306,40 +310,40 @@ option
       color: rgb(var(--on-accent))
       background: rgb(var(--cyan))
 
-.vertex-types table
-  width: 100%
-  border-collapse: collapse
-  border: 1px solid rgb(var(--ink) / .13)
-  border-radius: 10px
-  background: rgb(var(--surface) / .4)
-  font-size: 12px
+.vertex-type-list
+  display: grid
+  gap: 10px
+  margin: 0
+
+.vertex-type
+  display: grid
+  grid-template-columns: auto minmax(0, 1fr)
+  gap: 10px
+  align-items: center
+  font-size: 13px
   line-height: 1.35
 
-  th, td
-    padding: 7px 9px
-    border-bottom: 1px solid rgb(var(--ink) / .1)
-    text-align: left
-    vertical-align: top
+  dt, dd
+    margin: 0
 
-  th
-    color: rgb(var(--muted))
-    font-size: 10px
-    font-weight: 800
-    letter-spacing: .08em
-    text-transform: uppercase
-
-  tbody tr:last-child td
-    border-bottom: 0
-
-  td
+  dd
     color: rgb(var(--muted))
 
   .vertex-type-symbol
-    width: 76px
-    color: rgb(var(--ink))
-    font-family: var(--font-family)
-    font-size: 13px
-    font-weight: 700
+    span
+      min-width: 34px
+      min-height: 34px
+      display: inline-grid
+      place-items: center
+      padding: 2px 7px
+      border: 3px solid rgb(var(--graph-neutral))
+      border-radius: 999px
+      color: rgb(var(--ink))
+      background: rgb(var(--node-surface))
+      font-family: var(--font-family)
+      font-size: 13px
+      font-weight: 700
+      line-height: 1
 
 .how-to ol
   display: grid
@@ -371,19 +375,20 @@ option
 
 .legend-grid
   display: grid
-  grid-template-columns: 1fr 1fr
-  gap: 9px 12px
+  grid-template-columns: repeat(4, auto)
+  justify-content: space-evenly
 
   span
     display: flex
     align-items: center
-    gap: 7px
+    gap: 4px
+    white-space: nowrap
     color: rgb(var(--muted))
     font-size: 12px
 
 .dot
-  width: 10px
-  height: 10px
+  width: 9px
+  height: 9px
   border: 2px solid rgb(var(--line))
   border-radius: 50%
   background: rgb(var(--paper))
@@ -683,9 +688,6 @@ kbd
     display: grid
     grid-template-columns: minmax(0, 1.4fr) minmax(230px, 1fr)
     align-items: start
-
-  .state-card
-    margin-top: 20px
 
   .reset-button
     margin: 0
