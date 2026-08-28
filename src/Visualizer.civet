@@ -271,7 +271,7 @@ export function Visualizer() {
   return (
     <div class="app-shell">
       <header class="masthead">
-        <img class="brand-mark" src="/favicon.svg" alt="" aria-hidden="true" />
+        <img class="brand-mark" src="./favicon.svg" alt="" aria-hidden="true" />
         <div class="brand-copy">
           <h1 aria-label="Graph Orientation Playground">
             <span class="title-small-caps" aria-hidden="true">
