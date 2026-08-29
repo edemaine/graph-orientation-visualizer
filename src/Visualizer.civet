@@ -327,7 +327,7 @@ export function Visualizer() {
     };
   };
 
-  const groups = ["Learn", "Full graphs", "Paper gadgets"] as const;
+  const groups = ["Full graphs", "Paper gadgets"] as const;
 
   createEffect(() => {
     document.documentElement.dataset.theme = theme();
@@ -501,6 +501,9 @@ export function Visualizer() {
                             d={forced().direction === 1 ? geometry().forward : geometry().reverse}
                             marker-end="url(#ghost-arrow)"
                           />
+                        </Show>
+                        <Show when={forced().conflict}>
+                          <path class="edge-conflict" d={geometry().forward} />
                         </Show>
                       </g>
                       <Show when={hover() !== undefined}>

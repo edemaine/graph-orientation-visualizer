@@ -1,4 +1,4 @@
-.edge-base, .edge-oriented, .edge-forced
+.edge-base, .edge-oriented, .edge-forced, .edge-conflict
   fill: none
   stroke-linecap: round
   stroke-linejoin: round
@@ -21,6 +21,14 @@
   opacity: .52
   animation: forced-pulse 2.4s linear infinite, forced-march 2.4s linear infinite
 
+.edge-conflict
+  pointer-events: none
+  stroke: rgb(var(--red))
+  stroke-width: 6
+  stroke-dasharray: 1 15
+  opacity: .8
+  animation: conflict-throb 1.2s linear infinite
+
 #ghost-arrow path
   fill: rgb(var(--cyan))
 
@@ -34,10 +42,6 @@
 
 .edge-group:focus-within .edge-visual, .vertex:focus-within .vertex-shape
   filter: drop-shadow(0 0 2px rgb(var(--selection-glow) / .9)) drop-shadow(0 0 10px rgb(var(--selection-glow) / .58))
-
-.edge-group--conflict .edge-base
-  stroke: rgb(var(--red))
-  stroke-dasharray: 5 5
 
 .edge-hover
   pointer-events: none
@@ -148,7 +152,19 @@
   to
     stroke-dashoffset: -24
 
+@keyframes conflict-throb
+  from
+    animation-timing-function: ease-out
+  50%
+    stroke-width: 12
+    opacity: 1
+    animation-timing-function: ease-in
+
 @media (prefers-reduced-motion: reduce)
   .edge-forced
     animation: none
     opacity: .65
+
+  .edge-conflict
+    animation: none
+    stroke-width: 10

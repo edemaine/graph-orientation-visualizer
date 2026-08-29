@@ -51,6 +51,10 @@ describe("example selection", () => {
 
     const select = root.querySelector<HTMLSelectElement>("#example")!;
     expect(select.selectedOptions[0].textContent).toBe("Directed cycle");
+    expect([...select.querySelectorAll("optgroup")].map(({ label }) => label)).toEqual([
+      "Full graphs",
+      "Paper gadgets",
+    ]);
     expect(root.querySelector(".control-panel h2")).toBeNull();
     expect(root.querySelectorAll(".edge-hit")).toHaveLength(4);
 

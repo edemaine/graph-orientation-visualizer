@@ -10,7 +10,7 @@ import { EXAMPLES } from "../src/examples.civet";
 
 const star: GraphDefinition = {
   id: "star",
-  group: "Learn",
+  group: "Full graphs",
   title: "Star",
   description: "",
   vertices: [{ id: "v", x: 0, y: 0, constraint: symmetricConstraint(3, [1]) }],
@@ -80,7 +80,7 @@ const boundaryMask = (graph: GraphDefinition, directions: Record<string, 0 | 1>)
 };
 
 describe("example suite", () => {
-  it.each(EXAMPLES.map((example) => [example.title, example] as const))(
+  it.each(EXAMPLES.filter(({ id }) => id !== "all-equalizer-k4").map((example) => [example.title, example] as const))(
     "%s has a satisfying orientation",
     (_, graph) => expect(satisfyingAssignments(graph).length).toBeGreaterThan(0),
   );
@@ -129,5 +129,64 @@ describe("example suite", () => {
       expect(Number.isInteger((x - 70) / 80)).toBe(true);
       expect(Number.isInteger((1020 - y) / 80)).toBe(true);
     }
+  });
+
+  it("the equalizer K₄ has two satisfying orientations", () => {
+    const graph = EXAMPLES.find(({ id }) => id === "equalizer-k4-puzzle")!;
+    const solutions = satisfyingAssignments(graph);
+    expect(solutions).toHaveLength(2);
+
+    for (const solution of solutions) {
+      expect(["el", "er", "em"].every((edgeId) => solution[edgeId] === 1)).toBe(true);
+    }
+  });
+
+  it("the all-equalizer K₄ is impossible", () => {
+    const graph = EXAMPLES.find(({ id }) => id === "all-equalizer-k4")!;
+    expect(satisfyingAssignments(graph)).toHaveLength(0);
+  });
+
+  it("the two-equalizer K₄ has two satisfying orientations", () => {
+    const graph = EXAMPLES.find(({ id }) => id === "two-equalizer-k4")!;
+    expect(satisfyingAssignments(graph)).toHaveLength(2);
+    expect(graph.vertices.filter(({ constraint }) => constraint.shortLabel === "=").map(({ id }) => id)).toEqual([
+      "left",
+      "right",
+    ]);
+  });
+
+  it("the triangular prism has four pairs of directed cycles", () => {
+    const graph = EXAMPLES.find(({ id }) => id === "triangular-prism")!;
+    const solutions = satisfyingAssignments(graph);
+    expect(solutions).toHaveLength(4);
+
+    for (const solution of solutions) {
+      expect(["match-top", "match-left", "match-right"].every(
+        (edgeId) => solution[edgeId] === 1,
+      )).toBe(true);
+    }
+
+    const vertices = Object.fromEntries(graph.vertices.map((vertex) => [vertex.id, vertex]));
+    for (const prefix of ["outer", "inner"]) {
+      const top = vertices[`${prefix}-top`];
+      const left = vertices[`${prefix}-left`];
+      const right = vertices[`${prefix}-right`];
+      const base = Math.hypot(right.x - left.x, right.y - left.y);
+      const side = Math.hypot(top.x - left.x, top.y - left.y);
+      expect(Math.abs(base - side) / base).toBeLessThan(0.002);
+    }
+  });
+
+  it("the all-equalizer cube has its two bipartite orientations", () => {
+    const graph = EXAMPLES.find(({ id }) => id === "all-equalizer-cube")!;
+    expect(satisfyingAssignments(graph)).toHaveLength(2);
+
+    const vertices = Object.fromEntries(graph.vertices.map((vertex) => [vertex.id, vertex]));
+    expect(vertices["outer-ne"].x - vertices["outer-nw"].x).toBe(
+      vertices["outer-sw"].y - vertices["outer-nw"].y,
+    );
+    expect(vertices["inner-ne"].x - vertices["inner-nw"].x).toBe(
+      vertices["inner-sw"].y - vertices["inner-nw"].y,
+    );
   });
 });

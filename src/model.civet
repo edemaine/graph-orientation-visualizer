@@ -41,7 +41,7 @@ export interface Edge {
 
 export interface GraphDefinition {
   id: string;
-  group: "Learn" | "Full graphs" | "Paper gadgets";
+  group: "Full graphs" | "Paper gadgets";
   title: string;
   description: string;
   vertices: Vertex[];
