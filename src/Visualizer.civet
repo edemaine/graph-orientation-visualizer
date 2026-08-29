@@ -1,5 +1,6 @@
 import { For, Show, batch, createEffect, createMemo, createSignal } from "solid-js";
 import { EXAMPLES } from "./examples.civet";
+import graphStyles from "./graph.sass?inline";
 import {
   type Constraint,
   type Edge,
@@ -23,17 +24,23 @@ const THEME_STORAGE_KEY = "graph-orientation-theme";
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/";
 const SVG_XML_PREAMBLE = '<?xml version="1.0" encoding="UTF-8"?>';
-
-const pageStyles = (): string => {
-  return Array.from(document.styleSheets).flatMap((sheet) => {
-    try {
-      return Array.from(sheet.cssRules, (rule) => rule.cssText);
-    } catch {
-      // Cross-origin stylesheets do not expose their rules. The app's own styles do.
-      return [];
-    }
-  }).join("\n");
-};
+const GRAPH_STYLE_PROPERTIES = [
+  "--font-family",
+  "--graph-neutral",
+  "--primary",
+  "--cyan",
+  "--selection-glow",
+  "--red",
+  "--paper",
+  "--ink",
+  "--node-surface",
+  "--canvas-background",
+  "--forced-surface",
+  "--satisfied-surface",
+  "--impossible-surface",
+  "--green",
+  "--on-accent",
+] as const;
 
 export const serializeGraphSvg = (source: SVGSVGElement, theme: Theme): string => {
   const svg = source.cloneNode(true) as SVGSVGElement;
@@ -46,9 +53,15 @@ export const serializeGraphSvg = (source: SVGSVGElement, theme: Theme): string =
     if (!svg.hasAttribute("height")) svg.setAttribute("height", String(viewBox[3]));
   }
 
+  const computedStyle = getComputedStyle(source);
+  for (const property of GRAPH_STYLE_PROPERTIES) {
+    const value = computedStyle.getPropertyValue(property);
+    if (value) svg.style.setProperty(property, value);
+  }
+
   const style = document.createElementNS(SVG_NAMESPACE, "style");
   style.setAttribute("data-svg-export", "");
-  style.textContent = pageStyles();
+  style.textContent = graphStyles;
   svg.prepend(style);
 
   return `${SVG_XML_PREAMBLE}\n${new XMLSerializer().serializeToString(svg)}\n`;

@@ -1,0 +1,154 @@
+.edge-base, .edge-oriented, .edge-forced
+  fill: none
+  stroke-linecap: round
+  stroke-linejoin: round
+
+.edge-base
+  stroke: rgb(var(--graph-neutral))
+  stroke-width: 8
+
+.edge-oriented
+  stroke: rgb(var(--primary))
+  stroke-width: 9
+
+#arrow path
+  fill: rgb(var(--primary))
+
+.edge-forced
+  stroke: rgb(var(--cyan))
+  stroke-width: 8
+  stroke-dasharray: 8 16
+  opacity: .52
+  animation: forced-pulse 2.4s linear infinite, forced-march 2.4s linear infinite
+
+#ghost-arrow path
+  fill: rgb(var(--cyan))
+
+.edge-hit
+  fill: none
+  stroke: transparent
+  stroke-width: 28
+  cursor: pointer
+  pointer-events: stroke
+  outline: none
+
+.edge-group:focus-within .edge-visual, .vertex:focus-within .vertex-shape
+  filter: drop-shadow(0 0 2px rgb(var(--selection-glow) / .9)) drop-shadow(0 0 10px rgb(var(--selection-glow) / .58))
+
+.edge-group--conflict .edge-base
+  stroke: rgb(var(--red))
+  stroke-dasharray: 5 5
+
+.edge-hover
+  pointer-events: none
+  fill: rgb(var(--primary) / .2)
+  stroke: rgb(var(--primary) / .72)
+  stroke-width: 2
+
+  &--2
+    fill: rgb(var(--red) / .16)
+    stroke: rgb(var(--red) / .72)
+
+.external-port
+  pointer-events: none
+  fill: rgb(var(--paper))
+  stroke: rgb(var(--ink))
+  stroke-width: 4
+
+.vertex
+  outline: none
+
+.vertex-halo
+  fill: transparent
+  stroke: transparent
+  stroke-width: 3
+
+.vertex-body
+  fill: rgb(var(--node-surface))
+  stroke: rgb(var(--graph-neutral))
+  stroke-width: 8
+  transition: fill .18s ease, stroke .18s ease, stroke-width .18s ease
+
+.vertex-label
+  pointer-events: none
+  fill: rgb(var(--ink))
+  font-family: var(--font-family)
+  font-size: 16px
+  font-weight: 700
+
+  &--single-character
+    font-size: 22px
+
+.vertex-annotation
+  pointer-events: none
+  fill: rgb(var(--ink))
+  stroke: rgb(var(--canvas-background))
+  stroke-width: 4
+  paint-order: stroke fill
+  font-family: var(--font-family)
+  font-size: 15px
+  font-weight: 700
+
+.port-pair-label
+  pointer-events: none
+  fill: rgb(var(--ink))
+  font-family: var(--font-family)
+  font-size: 13px
+  font-weight: 900
+
+.vertex--forced
+  .vertex-body
+    fill: rgb(var(--forced-surface))
+    stroke: rgb(var(--cyan))
+    stroke-width: 8
+  .vertex-halo
+    stroke: rgb(var(--cyan) / .24)
+
+.vertex--clickable
+  cursor: pointer
+  &:hover .vertex-halo
+    stroke: rgb(var(--cyan) / .55)
+    stroke-dasharray: 4 4
+
+.vertex--satisfied
+  .vertex-body
+    fill: rgb(var(--satisfied-surface))
+    stroke: rgb(var(--green))
+  .vertex-halo
+    stroke: rgb(var(--green) / .15)
+
+.vertex--impossible
+  .vertex-body
+    fill: rgb(var(--impossible-surface))
+    stroke: rgb(var(--red))
+    stroke-width: 8
+  .vertex-halo
+    stroke: rgb(var(--red) / .2)
+    stroke-dasharray: 4 4
+
+.vertex-badge
+  circle
+    fill: rgb(var(--green))
+    stroke: rgb(var(--node-surface))
+    stroke-width: 2
+  text
+    fill: rgb(var(--on-accent))
+    font-family: var(--font-family)
+    font-size: 12px
+    font-weight: 900
+
+.vertex--impossible .vertex-badge circle
+  fill: rgb(var(--red))
+
+@keyframes forced-pulse
+  50%
+    opacity: .78
+
+@keyframes forced-march
+  to
+    stroke-dashoffset: -24
+
+@media (prefers-reduced-motion: reduce)
+  .edge-forced
+    animation: none
+    opacity: .65

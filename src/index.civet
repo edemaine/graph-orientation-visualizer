@@ -3,6 +3,7 @@
 
 import "@fontsource-variable/merriweather"
 import ./index.sass
+import ./graph.sass
 { App } from ./App.civet
 
 render => <App/>, document.getElementById('root') as HTMLElement

@@ -140,15 +140,13 @@ describe("example selection", () => {
     expect(root.querySelector(".canvas-toolbar")).toBeNull();
   });
 
-  it("serializes a standalone SVG with the current theme and page styles", () => {
+  it("serializes a standalone SVG with only graph styles", () => {
     const root = document.createElement("div");
     dispose = render(() => <Visualizer />, root);
-    const testStyle = document.createElement("style");
-    testStyle.textContent = ".edge-base { stroke: rgb(1 2 3); }";
-    document.head.append(testStyle);
+    const canvas = root.querySelector<SVGSVGElement>(".graph-canvas")!;
+    canvas.style.setProperty("--primary", "1 2 3");
 
-    const serialized = serializeGraphSvg(root.querySelector<SVGSVGElement>(".graph-canvas")!, "dark");
-    testStyle.remove();
+    const serialized = serializeGraphSvg(canvas, "dark");
 
     expect(serialized.startsWith('<?xml version="1.0" encoding="UTF-8"?>\n')).toBe(true);
     const parsed = new DOMParser().parseFromString(serialized, "image/svg+xml");
@@ -159,6 +157,9 @@ describe("example selection", () => {
     expect(svg.getAttribute("width")).toBe("800");
     expect(svg.getAttribute("height")).toBe("560");
     expect(svg.querySelector("style[data-svg-export]")?.textContent).toContain(".edge-base");
+    expect(svg.querySelector("style[data-svg-export]")?.textContent).not.toContain(".masthead");
+    expect(svg.querySelector("style[data-svg-export]")?.textContent).not.toContain(".download-button");
+    expect((svg as SVGSVGElement).style.getPropertyValue("--primary")).toBe("1 2 3");
     expect(svg.querySelectorAll(".edge-hit")).toHaveLength(4);
   });
 

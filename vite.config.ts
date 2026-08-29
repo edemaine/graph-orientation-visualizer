@@ -21,5 +21,6 @@ export default defineConfig(({ mode }) => ({
   },
   test: {
     include: ["test/**/*.civet"],
+    css: true,
   },
 }));
