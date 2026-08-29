@@ -19,6 +19,7 @@ const EXTERNAL_EDGE_PADDING = 7;
 
 interface Point { x: number; y: number }
 type Theme = "light" | "dark";
+interface LabelPart { text: string; italic: boolean }
 
 const THEME_STORAGE_KEY = "graph-orientation-theme";
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -41,6 +42,23 @@ const GRAPH_STYLE_PROPERTIES = [
   "--green",
   "--on-accent",
 ] as const;
+
+export const parseLabelMarkup = (label: string): LabelPart[] => {
+  const parts: LabelPart[] = [];
+  const italic = /<i>(.*?)<\/i>/g;
+  let cursor = 0;
+  for (const match of label.matchAll(italic)) {
+    if (match.index > cursor) parts.push({ text: label.slice(cursor, match.index), italic: false });
+    parts.push({ text: match[1], italic: true });
+    cursor = match.index + match[0].length;
+  }
+  if (cursor < label.length) parts.push({ text: label.slice(cursor), italic: false });
+  return parts.length ? parts : [{ text: label, italic: false }];
+};
+
+const plainLabel = (label: string) => {
+  return parseLabelMarkup(label).map(({ text }) => text).join("");
+};
 
 export const serializeGraphSvg = (source: SVGSVGElement, theme: Theme): string => {
   const svg = source.cloneNode(true) as SVGSVGElement;
@@ -404,7 +422,16 @@ export function Visualizer() {
                 )}</For>
               </select>
             </div>
-            <p class="description">{selectedGraph().description}</p>
+            <p class="description">
+              <For each={parseLabelMarkup(selectedGraph().description)}>{(part) => (
+                part.italic ? <i>{part.text}</i> : part.text
+              )}</For>
+              <Show when={selectedGraph().source}>{(source) => (
+                <a class="description-source" href={source().url} target="_blank" rel="noreferrer">
+                  {source().label} <span aria-hidden="true">↗</span>
+                </a>
+              )}</Show>
+            </p>
           </section>
 
           <div class="vertex-info">
@@ -553,7 +580,10 @@ export function Visualizer() {
                     totalPorts: 0,
                   }; };
                   const clickable = () => { return analysis().state === "forced"; };
-                  const vertexName = () => { return vertex.annotation?.text ?? vertex.label; };
+                  const vertexName = () => {
+                    const name = vertex.annotation?.text ?? vertex.label;
+                    return name === undefined ? undefined : plainLabel(name);
+                  };
                   const interiorLabel = () => { return vertex.label ?? vertex.constraint.shortLabel; };
                   const annotation = () => {
                     if (!vertex.annotation) return null;
@@ -562,8 +592,8 @@ export function Visualizer() {
                     const bottom = corner.startsWith("bottom");
                     return {
                       ...vertex.annotation,
-                      x: (right ? 1 : -1) * (NODE_RADIUS + 10),
-                      y: (bottom ? 1 : -1) * (NODE_RADIUS + 12),
+                      x: (right ? 1 : -1) * (NODE_RADIUS + 4),
+                      y: (bottom ? 1 : -1) * (NODE_RADIUS + 4),
                       anchor: (right ? "start" : "end") as "start" | "end",
                     };
                   };
@@ -617,7 +647,11 @@ export function Visualizer() {
                           text-anchor={visibleAnnotation().anchor}
                           dominant-baseline="central"
                           aria-hidden="true"
-                        >{visibleAnnotation().text}</text>
+                        >
+                          <For each={parseLabelMarkup(visibleAnnotation().text)}>{(part) => (
+                            <tspan font-style={part.italic ? "italic" : "normal"}>{part.text}</tspan>
+                          )}</For>
+                        </text>
                       )}</Show>
                       <For each={portLabels()}>{(label) => (
                         <text

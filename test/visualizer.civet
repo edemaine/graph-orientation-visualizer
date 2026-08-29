@@ -73,6 +73,15 @@ describe("example selection", () => {
     select.value = "figure-4-one-in-three-go";
     select.dispatchEvent(new Event("change", { bubbles: true }));
 
+    const description = root.querySelector(".description")!;
+    expect([...description.querySelectorAll("i")].map(({ textContent }) => textContent)).toEqual([
+      "x", "y", "z̄", "x", "z", "w",
+    ]);
+    expect(description.textContent).toContain("(x ∨ y ∨ z̄) ∧ (x ∨ z ∨ w)");
+    const source = description.querySelector<HTMLAnchorElement>(".description-source")!;
+    expect(source.textContent).toContain("View paper");
+    expect(source.href).toBe("https://dspace.jaist.ac.jp/dspace/bitstream/10119/15100/4/23092.pdf");
+    expect(source.target).toBe("_blank");
     const vertexTypeRows = root.querySelectorAll(".vertex-type-list .vertex-type");
     expect(vertexTypeRows).toHaveLength(3);
     expect(root.querySelectorAll(".vertex-type-symbol > span")).toHaveLength(3);
@@ -83,6 +92,14 @@ describe("example selection", () => {
     expect([...root.querySelectorAll(".vertex-label")].map(({ textContent }) => textContent)).toContain("1∕3");
     expect([...root.querySelectorAll(".vertex-label")].map(({ textContent }) => textContent)).toContain("2∕3");
     expect(root.querySelectorAll(".vertex-annotation")).toHaveLength(16);
+    const clauseLabel = [...root.querySelectorAll<SVGTextElement>(".vertex-annotation")]
+      .find(({ textContent }) => textContent === "C₁")!;
+    expect([...clauseLabel.querySelectorAll("tspan")].map((span) => [
+      span.textContent,
+      span.getAttribute("font-style"),
+    ])).toEqual([["C", "italic"], ["₁", "normal"]]);
+    expect(clauseLabel.closest(".vertex")?.getAttribute("aria-label")).toMatch(/^C₁,/);
+    expect(root.querySelector('.vertex[aria-label*="<i>"]')).toBeNull();
     expect(root.querySelectorAll(".vertex-body")).toHaveLength(16);
     expect(root.querySelector(".vertex-shape rect")).toBeNull();
 

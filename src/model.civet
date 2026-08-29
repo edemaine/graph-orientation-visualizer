@@ -44,6 +44,7 @@ export interface GraphDefinition {
   group: "Full graphs" | "Paper gadgets";
   title: string;
   description: string;
+  source?: { label: string; url: string };
   vertices: Vertex[];
   edges: Edge[];
   viewBox?: [number, number, number, number];

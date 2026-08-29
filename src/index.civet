@@ -2,6 +2,7 @@
 { render } from solid-js/web
 
 import "@fontsource-variable/merriweather"
+import "@fontsource-variable/merriweather/wght-italic.css"
 import ./index.sass
 import ./graph.sass
 { App } from ./App.civet
