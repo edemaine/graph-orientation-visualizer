@@ -20,6 +20,39 @@ interface Point { x: number; y: number }
 type Theme = "light" | "dark";
 
 const THEME_STORAGE_KEY = "graph-orientation-theme";
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+const XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/";
+const SVG_XML_PREAMBLE = '<?xml version="1.0" encoding="UTF-8"?>';
+
+const pageStyles = (): string => {
+  return Array.from(document.styleSheets).flatMap((sheet) => {
+    try {
+      return Array.from(sheet.cssRules, (rule) => rule.cssText);
+    } catch {
+      // Cross-origin stylesheets do not expose their rules. The app's own styles do.
+      return [];
+    }
+  }).join("\n");
+};
+
+export const serializeGraphSvg = (source: SVGSVGElement, theme: Theme): string => {
+  const svg = source.cloneNode(true) as SVGSVGElement;
+  if (!svg.hasAttribute("xmlns")) svg.setAttributeNS(XMLNS_NAMESPACE, "xmlns", SVG_NAMESPACE);
+  svg.setAttribute("data-theme", theme);
+
+  const viewBox = svg.getAttribute("viewBox")?.trim().split(/[ ,]+/).map(Number);
+  if (viewBox?.length === 4 && viewBox.every(Number.isFinite)) {
+    if (!svg.hasAttribute("width")) svg.setAttribute("width", String(viewBox[2]));
+    if (!svg.hasAttribute("height")) svg.setAttribute("height", String(viewBox[3]));
+  }
+
+  const style = document.createElementNS(SVG_NAMESPACE, "style");
+  style.setAttribute("data-svg-export", "");
+  style.textContent = pageStyles();
+  svg.prepend(style);
+
+  return `${SVG_XML_PREAMBLE}\n${new XMLSerializer().serializeToString(svg)}\n`;
+};
 
 const initialTheme = (): Theme => {
   try {
@@ -158,6 +191,7 @@ const constraintRule = (constraint: Constraint): string => {
 };
 
 export function Visualizer() {
+  let graphCanvas: SVGSVGElement | undefined;
   const [theme, setTheme] = createSignal<Theme>(initialTheme());
   const [selectedId, setSelectedId] = createSignal(EXAMPLES[0].id);
   const selectedGraph = createMemo(() => EXAMPLES.find(({ id }) => id === selectedId()) ?? EXAMPLES[0]);
@@ -296,6 +330,22 @@ export function Visualizer() {
     }
   };
 
+  const downloadSvg = () => {
+    if (!graphCanvas) return;
+    const blob = new Blob([serializeGraphSvg(graphCanvas, theme())], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selectedGraph().id}.svg`;
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
   return (
     <div class="app-shell">
       <header class="masthead">
@@ -394,6 +444,7 @@ export function Visualizer() {
         <section class="canvas-panel" aria-label={`${selectedGraph().title} graph`}>
           <div class={`graph-frame${progress().solved ? " graph-frame--solved" : ""}`}>
             <svg
+              ref=graphCanvas!
               class="graph-canvas"
               viewBox={(selectedGraph().viewBox ?? [0, 0, 800, 560]).join(" ")}
               role="img"
@@ -580,6 +631,9 @@ export function Visualizer() {
           <div class="canvas-footer">
             <span class="counter"><strong>{progress().oriented}</strong> / {selectedGraph().edges.length} edges</span>
             <p class="keyboard-note">Keyboard: focus an edge and press <kbd>Enter</kbd> to cycle it, or <kbd>Delete</kbd> to clear it.</p>
+            <button class="download-button" type="button" onClick={downloadSvg}>
+              <span aria-hidden="true">↓</span> Download SVG
+            </button>
           </div>
         </section>
       </main>

@@ -444,6 +444,28 @@ option
 .counter strong
   color: rgb(var(--ink))
 
+.download-button
+  flex: 0 0 auto
+  padding: 7px 11px
+  border: 1px solid rgb(var(--ink) / .2)
+  border-radius: 8px
+  color: rgb(var(--ink))
+  background: rgb(var(--surface) / .55)
+  cursor: pointer
+  font-size: 11px
+  font-weight: 750
+  white-space: nowrap
+  transition: border-color .18s ease, background .18s ease, transform .18s ease
+
+  &:hover
+    border-color: rgb(var(--primary))
+    background: rgb(var(--surface) / .85)
+    transform: translateY(-1px)
+
+  &:focus-visible
+    outline: 3px solid rgb(var(--primary) / .2)
+    outline-offset: 2px
+
 .graph-frame
   position: relative
   min-height: 500px
