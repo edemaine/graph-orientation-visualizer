@@ -1,4 +1,4 @@
-import { For, Show, batch, createEffect, createMemo, createSignal } from "solid-js";
+import { For, Show, batch, createEffect, createMemo, createSignal, onCleanup } from "solid-js";
 import { EXAMPLES } from "./examples.civet";
 import graphStyles from "./graph.sass?inline";
 import {
@@ -19,6 +19,8 @@ const EXTERNAL_EDGE_PADDING = 7;
 
 export interface Point { x: number; y: number }
 type Theme = "light" | "dark";
+type DirectionState = Record<string, EdgeDirection>;
+type DirectionUpdate = DirectionState | ((current: DirectionState) => DirectionState);
 interface LabelPart { text: string; italic: boolean }
 
 const EDGE_SWIPE_MINIMUM_PIXELS = 12;
@@ -61,6 +63,15 @@ export const parseLabelMarkup = (label: string): LabelPart[] => {
 
 const plainLabel = (label: string) => {
   return parseLabelMarkup(label).map(({ text }) => text).join("");
+};
+
+export const platformUsesCommandKey = (platform: string) => {
+  return /mac|iphone|ipad|ipod/i.test(platform);
+};
+
+const detectedPlatform = () => {
+  const userAgentData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
+  return userAgentData?.platform || navigator.platform || navigator.userAgent;
 };
 
 export const serializeGraphSvg = (source: SVGSVGElement, theme: Theme): string => {
@@ -261,10 +272,16 @@ export function Visualizer() {
     startPoint: Point;
   } | null = null;
   let suppressedEdgeClick: { edgeId: string; expires: number } | null = null;
+  const usesCommandKey = platformUsesCommandKey(detectedPlatform());
+  const historyModifier = usesCommandKey ? "Command" : "Ctrl";
   const [theme, setTheme] = createSignal<Theme>(initialTheme());
   const [selectedId, setSelectedId] = createSignal(EXAMPLES[0].id);
   const selectedGraph = createMemo(() => EXAMPLES.find(({ id }) => id === selectedId()) ?? EXAMPLES[0]);
-  const [directions, setDirections] = createSignal<Record<string, EdgeDirection>>(emptyDirections(selectedGraph()));
+  const [directions, setDirections] = createSignal<DirectionState>(emptyDirections(selectedGraph()));
+  const [undoStack, setUndoStack] = createSignal<DirectionState[]>([]);
+  const [redoStack, setRedoStack] = createSignal<DirectionState[]>([]);
+  const canUndo = createMemo(() => undoStack().length > 0);
+  const canRedo = createMemo(() => redoStack().length > 0);
   const [hovered, setHovered] = createSignal<{ edge: string; zone: 0 | 1 | 2 } | null>(null);
 
   const vertexTypes = createMemo(() => {
@@ -318,17 +335,59 @@ export function Visualizer() {
     return { oriented, impossible, satisfied, forced, edgeConflicts, solved };
   });
 
+  const directionsEqual = (first: DirectionState, second: DirectionState) => {
+    const keys = Object.keys(first);
+    return keys.length === Object.keys(second).length && keys.every((key) => first[key] === second[key]);
+  };
+
+  const commitDirections = (update: DirectionUpdate) => {
+    const current = directions();
+    const next = typeof update === "function" ? update(current) : update;
+    if (directionsEqual(current, next)) return;
+    batch(() => {
+      setUndoStack((stack) => [...stack, current]);
+      setRedoStack([]);
+      setDirections(next);
+    });
+  };
+
+  const undo = () => {
+    const stack = undoStack();
+    const previous = stack[stack.length - 1];
+    if (!previous) return;
+    const current = directions();
+    batch(() => {
+      setUndoStack(stack.slice(0, -1));
+      setRedoStack((redo) => [...redo, current]);
+      setDirections(previous);
+    });
+  };
+
+  const redo = () => {
+    const stack = redoStack();
+    const next = stack[stack.length - 1];
+    if (!next) return;
+    const current = directions();
+    batch(() => {
+      setRedoStack(stack.slice(0, -1));
+      setUndoStack((undoHistory) => [...undoHistory, current]);
+      setDirections(next);
+    });
+  };
+
   const chooseExample = (id: string) => {
     const graph = EXAMPLES.find((example) => example.id === id) ?? EXAMPLES[0];
     batch(() => {
       setSelectedId(graph.id);
       setDirections(emptyDirections(graph));
+      setUndoStack([]);
+      setRedoStack([]);
       setHovered(null);
     });
   };
 
   const setEdge = (edgeId: string, direction: EdgeDirection) => {
-    setDirections((current) => ({ ...current, [edgeId]: direction }));
+    commitDirections((current) => ({ ...current, [edgeId]: direction }));
   };
 
   const interactWithEdge = (event: MouseEvent, edge: Edge) => {
@@ -407,7 +466,7 @@ export function Visualizer() {
   const applyForcedAt = (vertex: Vertex) => {
     const forced = analyses()[vertex.id].forced;
     if (forced.size === 0) return;
-    setDirections((current) => {
+    commitDirections((current) => {
       const next = { ...current };
       forced.forEach((direction, edgeId) => { next[edgeId] = direction; });
       return next;
@@ -440,6 +499,24 @@ export function Visualizer() {
   };
 
   const groups = ["Full graphs", "Paper gadgets"] as const;
+
+  const handleHistoryKeyDown = (event: KeyboardEvent) => {
+    if (event.defaultPrevented || event.altKey || (!event.ctrlKey && !event.metaKey)) return;
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) return;
+    const key = event.key.toLowerCase();
+    const action = key === "z" ? (event.shiftKey ? redo : undo) : key === "y" ? redo : null;
+    if (!action || (action === undo ? !canUndo() : !canRedo())) return;
+    event.preventDefault();
+    action();
+  };
+
+  window.addEventListener("keydown", handleHistoryKeyDown);
+  onCleanup(() => window.removeEventListener("keydown", handleHistoryKeyDown));
 
   createEffect(() => {
     document.documentElement.dataset.theme = theme();
@@ -570,7 +647,7 @@ export function Visualizer() {
             </ol>
           </section>
 
-          <button class="reset-button" type="button" onClick={() => setDirections(emptyDirections(selectedGraph()))}>
+          <button class="reset-button" type="button" onClick={() => commitDirections(emptyDirections(selectedGraph()))}>
             <span aria-hidden="true">↺</span> Reset orientations
           </button>
         </aside>
@@ -776,8 +853,42 @@ export function Visualizer() {
             </Show>
           </div>
           <div class="canvas-footer">
-            <span class="counter"><strong>{progress().oriented}</strong> / {selectedGraph().edges.length} edges</span>
-            <p class="keyboard-note">Keyboard: focus an edge and press <kbd>Enter</kbd> to cycle it, or <kbd>Delete</kbd> to clear it.</p>
+            <div class="canvas-history">
+              <span class="counter"><strong>{progress().oriented}</strong> / {selectedGraph().edges.length} edges</span>
+              <div class="history-controls" role="group" aria-label="Orientation history">
+                <button
+                  class="history-button"
+                  type="button"
+                  disabled={!canUndo()}
+                  aria-label="Undo orientation change"
+                  title={`Undo (${historyModifier} + Z)`}
+                  onClick={undo}
+                >
+                  <span aria-hidden="true">↶</span><span class="history-button__label">Undo</span>
+                </button>
+                <button
+                  class="history-button"
+                  type="button"
+                  disabled={!canRedo()}
+                  aria-label="Redo orientation change"
+                  title={usesCommandKey
+                    ? "Redo (Command + Shift + Z)"
+                    : "Redo (Ctrl + Y)"}
+                  onClick={redo}
+                >
+                  <span aria-hidden="true">↷</span><span class="history-button__label">Redo</span>
+                </button>
+              </div>
+            </div>
+            <p class="keyboard-note">
+              Keyboard: <kbd>Enter</kbd> cycles, <kbd>Delete</kbd> clears, {" "}
+              <Show
+                when={usesCommandKey}
+                fallback={<span><kbd>Ctrl</kbd>+<kbd>Z</kbd> undo, <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo.</span>}
+              >
+                <span><kbd>Command</kbd>+<kbd>Z</kbd> undo, <kbd>Command</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> redo.</span>
+              </Show>
+            </p>
             <button class="download-button" type="button" onClick={downloadSvg}>
               <span aria-hidden="true">↓</span> Download SVG
             </button>

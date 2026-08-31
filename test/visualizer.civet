@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
-import { Visualizer, edgeSwipeDirection, serializeGraphSvg } from "../src/Visualizer.civet";
+import {
+  Visualizer,
+  edgeSwipeDirection,
+  platformUsesCommandKey,
+  serializeGraphSvg,
+} from "../src/Visualizer.civet";
 
 let dispose: (() => void) | undefined;
 
@@ -19,6 +24,25 @@ describe("example selection", () => {
     expect(edgeSwipeDirection(0.6, 0.4, { x: 30, y: 10 }, { x: 10, y: 10 })).toBe(0);
     expect(edgeSwipeDirection(0.4, 0.6, { x: 10, y: 10 }, { x: 18, y: 10 })).toBeNull();
     expect(edgeSwipeDirection(0.5, 0.502, { x: 10, y: 10 }, { x: 30, y: 10 })).toBeNull();
+  });
+
+  it("uses Command shortcut labels on Apple platforms", () => {
+    expect(platformUsesCommandKey("MacIntel")).toBe(true);
+    expect(platformUsesCommandKey("macOS")).toBe(true);
+    expect(platformUsesCommandKey("Win32")).toBe(false);
+    vi.spyOn(window.navigator, "platform", "get").mockReturnValue("MacIntel");
+
+    const root = document.createElement("div");
+    dispose = render(() => <Visualizer />, root);
+
+    const keyboardNote = root.querySelector(".keyboard-note")!;
+    expect(keyboardNote.textContent).toContain("Command+Z undo");
+    expect(keyboardNote.textContent).toContain("Command+Shift+Z redo");
+    expect(keyboardNote.textContent).not.toContain("Ctrl");
+    expect(root.querySelector<HTMLButtonElement>('[aria-label="Undo orientation change"]')?.title)
+      .toBe("Undo (Command + Z)");
+    expect(root.querySelector<HTMLButtonElement>('[aria-label="Redo orientation change"]')?.title)
+      .toBe("Redo (Command + Shift + Z)");
   });
 
   it("orients an edge by dragging and suppresses the following synthetic click", () => {
@@ -220,9 +244,56 @@ describe("example selection", () => {
 
     expect(frame.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     expect(footer.querySelector(".counter")?.textContent).toContain("0 / 4 edges");
+    expect(footer.querySelector(".canvas-history")?.contains(footer.querySelector(".counter"))).toBe(true);
+    expect(footer.querySelectorAll(".history-button")).toHaveLength(2);
     expect(footer.querySelector(".keyboard-note")).not.toBeNull();
     expect(footer.querySelector(".download-button")?.textContent).toContain("Download SVG");
     expect(root.querySelector(".canvas-toolbar")).toBeNull();
+  });
+
+  it("undoes and redoes orientation history with buttons and keyboard shortcuts", () => {
+    const root = document.createElement("div");
+    document.body.append(root);
+    dispose = render(() => <Visualizer />, root);
+
+    const edge = root.querySelector<SVGPathElement>('.edge-hit[aria-label^="ab:"]')!;
+    const undo = root.querySelector<HTMLButtonElement>('[aria-label="Undo orientation change"]')!;
+    const redo = root.querySelector<HTMLButtonElement>('[aria-label="Redo orientation change"]')!;
+    expect(undo.disabled).toBe(true);
+    expect(redo.disabled).toBe(true);
+
+    edge.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    expect(edge.getAttribute("aria-label")).toContain("toward b");
+    expect(undo.disabled).toBe(false);
+
+    undo.click();
+    expect(edge.getAttribute("aria-label")).toContain("unoriented");
+    expect(redo.disabled).toBe(false);
+
+    redo.click();
+    expect(edge.getAttribute("aria-label")).toContain("toward b");
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true }));
+    expect(edge.getAttribute("aria-label")).toContain("unoriented");
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "y", ctrlKey: true }));
+    expect(edge.getAttribute("aria-label")).toContain("toward b");
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true }));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, shiftKey: true }));
+    expect(edge.getAttribute("aria-label")).toContain("toward b");
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", metaKey: true }));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", metaKey: true, shiftKey: true }));
+    expect(edge.getAttribute("aria-label")).toContain("toward b");
+
+    root.querySelector<HTMLButtonElement>(".reset-button")!.click();
+    expect(edge.getAttribute("aria-label")).toContain("unoriented");
+    undo.click();
+    expect(edge.getAttribute("aria-label")).toContain("toward b");
+
+    const select = root.querySelector<HTMLSelectElement>("#example")!;
+    select.value = "k4-puzzle";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(undo.disabled).toBe(true);
+    expect(redo.disabled).toBe(true);
   });
 
   it("serializes a standalone SVG with only graph styles", () => {

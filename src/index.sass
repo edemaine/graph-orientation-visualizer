@@ -452,6 +452,55 @@ option
 .counter strong
   color: rgb(var(--ink))
 
+.canvas-history, .history-controls
+  display: flex
+  align-items: center
+
+.canvas-history
+  min-width: min-content
+  flex: 0 1 auto
+  gap: 10px
+
+.history-controls
+  min-width: min-content
+  flex: 0 1 auto
+  flex-wrap: wrap
+  gap: 2px 5px
+
+.history-button
+  min-height: 30px
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  gap: 4px
+  padding: 5px 8px
+  border: 1px solid rgb(var(--ink) / .2)
+  border-radius: 8px
+  color: rgb(var(--ink))
+  background: rgb(var(--surface) / .55)
+  cursor: pointer
+  font-size: 11px
+  font-weight: 750
+  transition: border-color .18s ease, background .18s ease, opacity .18s ease, transform .18s ease
+
+  > span:first-child
+    font-family: ui-sans-serif, system-ui, sans-serif
+    font-size: 16px
+    line-height: 1
+
+  &:not(:disabled):hover
+    border-color: rgb(var(--primary))
+    background: rgb(var(--surface) / .85)
+    transform: translateY(-1px)
+
+  &:focus-visible
+    outline: 3px solid rgb(var(--primary) / .2)
+    outline-offset: 2px
+
+  &:disabled
+    opacity: .38
+    cursor: default
+
 .download-button
   flex: 0 0 auto
   padding: 7px 11px
@@ -535,9 +584,12 @@ option
     background: rgb(var(--green))
 
 .keyboard-note
-  margin: 0
+  min-width: 0
+  flex: 1 1 auto
+  margin: 0 0 0 6px
   color: rgb(var(--muted))
   font-size: 11px
+  line-height: 2.1
   text-align: right
 
 kbd
@@ -614,6 +666,13 @@ kbd
     min-height: 380px
 
   .keyboard-note
+    display: none
+
+  .history-button
+    width: 30px
+    padding-inline: 0
+
+  .history-button__label
     display: none
 
 @media (prefers-reduced-motion: reduce)

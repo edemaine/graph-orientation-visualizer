@@ -14,6 +14,7 @@ Included:
 - local contradiction detection for partial orientations;
 - local forced-edge deductions, shown as dashed arrows;
 - click-to-apply forced moves at a vertex;
+- undo/redo history for orientation changes;
 - keyboard edge controls and touch-sized SVG hit targets;
 - reset and solved-state feedback;
 - ordered port relations, symmetric `S`-in-`j` relations, multiedges, self-loop-aware analysis, and dangling gadget edges;
@@ -28,6 +29,7 @@ The current deduction system is deliberately local. It filters the allowed relat
 - Swipe or drag along an edge to direct it in the gesture direction.
 - Click the middle third to make the edge unoriented.
 - Click a cyan vertex to apply all orientations forced by that vertex.
+- Use **Undo** and **Redo**, or press `Ctrl`/`Command`+`Z` to undo and `Ctrl`+`Y` or `Command`+`Shift`+`Z` to redo.
 - Focus an edge with the keyboard and press `Enter` or `Space` to cycle its state. Press `Delete` or `Backspace` to clear it.
 - Use **Reset orientations** to clear the current example.
 
