@@ -90,10 +90,18 @@ describe("example selection", () => {
 
     dispatchPointer("pointerdown", 40);
     dispatchPointer("pointermove", 50);
+    expect(root.querySelector(".edge-preview--undirected")).not.toBeNull();
+    expect(root.querySelector(".edge-hover")).toBeNull();
     dispatchPointer("pointerup", 60);
     expect(path.getAttribute("aria-label")).toContain("toward b");
     path.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 60, clientY: 0 }));
     expect(path.getAttribute("aria-label")).toContain("toward b");
+
+    dispatchPointer("pointermove", 90);
+    const preview = root.querySelector<SVGPathElement>(".edge-preview--directed")!;
+    expect(preview).not.toBeNull();
+    expect(preview.getAttribute("marker-end")).toBe("url(#preview-arrow)");
+    expect(preview.getAttribute("d")).toBe(path.getAttribute("d"));
 
     dispatchPointer("pointerdown", 60);
     dispatchPointer("pointermove", 50);

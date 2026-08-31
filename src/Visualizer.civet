@@ -680,6 +680,9 @@ export function Visualizer() {
                 <marker id="arrow" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse" overflow="visible">
                   <path d="M 0 -1 L 10 3.854 A 1.252 1.252 0 0 1 10 6.146 L 0 11 z" />
                 </marker>
+                <marker id="preview-arrow" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse" overflow="visible">
+                  <path d="M 0 -1 L 10 3.854 A 1.252 1.252 0 0 1 10 6.146 L 0 11 z" />
+                </marker>
                 <marker id="ghost-arrow" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse" overflow="visible">
                   <path d="M 0 -1 L 10 3.854 A 1.252 1.252 0 0 1 10 6.146 L 0 11 z" />
                 </marker>
@@ -696,7 +699,7 @@ export function Visualizer() {
                   const forced = () => { return forcedEdges()[edge.id] ?? { direction: null, conflict: false }; };
                   const hover = () => { return hovered()?.edge === edge.id ? hovered()?.zone : undefined; };
                   return (
-                    <g class={`edge-group${forced().conflict ? " edge-group--conflict" : ""}`}>
+                    <g class={`edge-group${forced().conflict ? " edge-group--conflict" : ""}${hover() !== undefined ? " edge-group--previewing" : ""}`}>
                       <g class="edge-visual">
                         <path class="edge-base" d={geometry().forward} />
                         <Show when={direction() !== null}>
@@ -718,11 +721,10 @@ export function Visualizer() {
                         </Show>
                       </g>
                       <Show when={hover() !== undefined}>
-                        <circle
-                          class={`edge-hover edge-hover--${hover()}`}
-                          cx={hover() === 0 ? geometry().start.x : hover() === 1 ? geometry().end.x : geometry().midpoint.x}
-                          cy={hover() === 0 ? geometry().start.y : hover() === 1 ? geometry().end.y : geometry().midpoint.y}
-                          r="8"
+                        <path
+                          class={`edge-preview edge-preview--${hover() === 2 ? "undirected" : "directed"}`}
+                          d={hover() === 0 ? geometry().reverse : geometry().forward}
+                          marker-end={hover() === 2 ? undefined : "url(#preview-arrow)"}
                         />
                       </Show>
                       <path
