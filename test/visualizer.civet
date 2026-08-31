@@ -112,6 +112,14 @@ describe("example selection", () => {
     expect(root.querySelector("h1")?.getAttribute("aria-label")).toBe("Graph Orientation Playground");
     expect(root.querySelector(".title-small-caps")?.textContent).toBe("GRAPH ORIENTATION PLAYGROUND");
     expect(root.textContent).not.toContain("Interactive constraint lab");
+    const paper = root.querySelector<HTMLAnchorElement>(".paper-link")!;
+    expect(paper.href).toBe("https://arxiv.org/abs/2603.03488");
+    expect(paper.textContent).toContain("Paper");
+    expect(paper.textContent).not.toContain("Read the paper");
+    const github = root.querySelector<HTMLAnchorElement>(".github-link")!;
+    expect(github.href).toBe("https://github.com/edemaine/graph-orientation-visualizer");
+    expect(github.textContent).toContain("GitHub");
+    expect(github.querySelector(".github-icon")).not.toBeNull();
   });
 
   it("toggles and remembers the color theme", () => {

@@ -136,7 +136,7 @@ button, a, select, [role="button"]
   align-items: center
   gap: 9px
 
-.paper-link, .theme-toggle
+.masthead-link, .theme-toggle
   padding: 10px 14px
   border: 1px solid rgb(var(--ink) / .17)
   border-radius: 999px
@@ -155,8 +155,18 @@ button, a, select, [role="button"]
     outline: 3px solid rgb(var(--primary) / .2)
     outline-offset: 2px
 
-.paper-link
+.masthead-link
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  gap: 5px
   text-decoration: none
+
+.github-icon
+  width: 16px
+  height: 16px
+  flex: 0 0 auto
+  fill: currentColor
 
 .theme-toggle
   width: 40px
@@ -633,18 +643,27 @@ kbd
   .brand-copy h1
     font-size: 20px
 
-  .paper-link
+  .masthead-actions
+    gap: 6px
+
+  .masthead-link
     width: 40px
     height: 40px
-    display: grid
-    place-items: center
     overflow: hidden
     padding: 0
-    color: transparent
 
-    span
-      color: rgb(var(--ink))
-      font-size: 17px
+  .masthead-link__label
+    display: none
+
+  .paper-link .external-arrow
+    font-size: 17px
+
+  .github-link .external-arrow
+    display: none
+
+  .github-icon
+    width: 18px
+    height: 18px
 
   .workspace
     padding: 16px
