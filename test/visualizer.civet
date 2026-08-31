@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
-import { Visualizer, serializeGraphSvg } from "../src/Visualizer.civet";
+import { Visualizer, edgeSwipeDirection, serializeGraphSvg } from "../src/Visualizer.civet";
 
 let dispose: (() => void) | undefined;
 
@@ -14,6 +14,70 @@ afterEach(() => {
 });
 
 describe("example selection", () => {
+  it("uses edge progress to resolve deliberate swipes in either direction", () => {
+    expect(edgeSwipeDirection(0.4, 0.6, { x: 10, y: 10 }, { x: 30, y: 10 })).toBe(1);
+    expect(edgeSwipeDirection(0.6, 0.4, { x: 30, y: 10 }, { x: 10, y: 10 })).toBe(0);
+    expect(edgeSwipeDirection(0.4, 0.6, { x: 10, y: 10 }, { x: 18, y: 10 })).toBeNull();
+    expect(edgeSwipeDirection(0.5, 0.502, { x: 10, y: 10 }, { x: 30, y: 10 })).toBeNull();
+  });
+
+  it("orients an edge by dragging and suppresses the following synthetic click", () => {
+    const root = document.createElement("div");
+    document.body.append(root);
+    dispose = render(() => <Visualizer />, root);
+
+    const path = root.querySelector<SVGPathElement>('.edge-hit[aria-label^="ab:"]')!;
+    const svg = path.ownerSVGElement!;
+    Object.defineProperty(svg, "getScreenCTM", {
+      configurable: true,
+      value: () => ({ inverse: () => ({}) }),
+    });
+    Object.defineProperty(svg, "createSVGPoint", {
+      configurable: true,
+      value: () => {
+        const point = {
+          x: 0,
+          y: 0,
+          matrixTransform: () => ({ x: point.x, y: point.y }),
+        };
+        return point;
+      },
+    });
+    Object.defineProperty(path, "getTotalLength", { configurable: true, value: () => 100 });
+    Object.defineProperty(path, "getPointAtLength", {
+      configurable: true,
+      value: (length: number) => ({ x: length, y: 0 }),
+    });
+
+    const dispatchPointer = (type: string, x: number) => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        clientX: x,
+        clientY: 0,
+      });
+      Object.defineProperties(event, {
+        pointerId: { value: 7 },
+        isPrimary: { value: true },
+      });
+      path.dispatchEvent(event);
+    };
+
+    dispatchPointer("pointerdown", 40);
+    dispatchPointer("pointermove", 50);
+    dispatchPointer("pointerup", 60);
+    expect(path.getAttribute("aria-label")).toContain("toward b");
+    path.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 60, clientY: 0 }));
+    expect(path.getAttribute("aria-label")).toContain("toward b");
+
+    dispatchPointer("pointerdown", 60);
+    dispatchPointer("pointermove", 50);
+    dispatchPointer("pointerup", 40);
+    path.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 40, clientY: 0 }));
+    expect(path.getAttribute("aria-label")).toContain("toward a");
+  });
+
   it("uses the favicon artwork as the masthead brand mark", () => {
     const root = document.createElement("div");
     dispose = render(() => <Visualizer />, root);

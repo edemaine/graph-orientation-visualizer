@@ -17,9 +17,12 @@ const NODE_RADIUS = 29;
 const NODE_EDGE_PADDING = NODE_RADIUS + 4;
 const EXTERNAL_EDGE_PADDING = 7;
 
-interface Point { x: number; y: number }
+export interface Point { x: number; y: number }
 type Theme = "light" | "dark";
 interface LabelPart { text: string; italic: boolean }
+
+const EDGE_SWIPE_MINIMUM_PIXELS = 12;
+const EDGE_SWIPE_MINIMUM_FRACTION = 0.004;
 
 const THEME_STORAGE_KEY = "graph-orientation-theme";
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -198,7 +201,34 @@ const closestFraction = (path: SVGPathElement, point: Point): number => {
       bestFraction = fraction;
     }
   }
+  let radius = 1 / 60;
+  for (let pass = 0; pass < 2; pass += 1) {
+    const start = Math.max(0, bestFraction - radius);
+    const end = Math.min(1, bestFraction + radius);
+    for (let step = 0; step <= 12; step += 1) {
+      const fraction = start + (end - start) * step / 12;
+      const sample = path.getPointAtLength(length * fraction);
+      const distance = (sample.x - point.x) ** 2 + (sample.y - point.y) ** 2;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestFraction = fraction;
+      }
+    }
+    radius /= 12;
+  }
   return bestFraction;
+};
+
+export const edgeSwipeDirection = (
+  startFraction: number,
+  endFraction: number,
+  startPoint: Point,
+  endPoint: Point,
+): 0 | 1 | null => {
+  const distance = Math.hypot(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+  const progress = endFraction - startFraction;
+  if (distance < EDGE_SWIPE_MINIMUM_PIXELS || Math.abs(progress) < EDGE_SWIPE_MINIMUM_FRACTION) return null;
+  return progress > 0 ? 1 : 0;
 };
 
 const directionLabel = (edge: Edge, direction: 0 | 1): string => {
@@ -223,6 +253,14 @@ const constraintRule = (constraint: Constraint): string => {
 
 export function Visualizer() {
   let graphCanvas: SVGSVGElement | undefined;
+  let activeEdgeDrag: {
+    edgeId: string;
+    pointerId: number;
+    path: SVGPathElement;
+    startFraction: number;
+    startPoint: Point;
+  } | null = null;
+  let suppressedEdgeClick: { edgeId: string; expires: number } | null = null;
   const [theme, setTheme] = createSignal<Theme>(initialTheme());
   const [selectedId, setSelectedId] = createSignal(EXAMPLES[0].id);
   const selectedGraph = createMemo(() => EXAMPLES.find(({ id }) => id === selectedId()) ?? EXAMPLES[0]);
@@ -299,10 +337,66 @@ export function Visualizer() {
     setEdge(edge.id, fraction < 1 / 3 ? 0 : fraction > 2 / 3 ? 1 : null);
   };
 
+  const clickEdge = (event: MouseEvent, edge: Edge) => {
+    if (suppressedEdgeClick?.edgeId === edge.id && performance.now() <= suppressedEdgeClick.expires) {
+      suppressedEdgeClick = null;
+      return;
+    }
+    suppressedEdgeClick = null;
+    interactWithEdge(event, edge);
+  };
+
+  const beginEdgeDrag = (event: PointerEvent, edge: Edge) => {
+    if (event.button !== 0 || event.isPrimary === false) return;
+    const path = event.currentTarget as SVGPathElement;
+    activeEdgeDrag = {
+      edgeId: edge.id,
+      pointerId: event.pointerId,
+      path,
+      startFraction: closestFraction(path, eventPoint(event, path)),
+      startPoint: { x: event.clientX, y: event.clientY },
+    };
+    try {
+      path.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture is an enhancement; the gesture can still finish over the path.
+    }
+  };
+
+  const finishEdgeDrag = (event: PointerEvent, edge: Edge) => {
+    const drag = activeEdgeDrag;
+    if (!drag || drag.edgeId !== edge.id || drag.pointerId !== event.pointerId) return;
+    activeEdgeDrag = null;
+    try {
+      drag.path.releasePointerCapture(event.pointerId);
+    } catch {
+      // The browser may already have released capture.
+    }
+    const direction = edgeSwipeDirection(
+      drag.startFraction,
+      closestFraction(drag.path, eventPoint(event, drag.path)),
+      drag.startPoint,
+      { x: event.clientX, y: event.clientY },
+    );
+    if (direction === null) return;
+    event.preventDefault();
+    setEdge(edge.id, direction);
+    suppressedEdgeClick = { edgeId: edge.id, expires: performance.now() + 750 };
+  };
+
+  const cancelEdgeDrag = (event: PointerEvent, edge: Edge) => {
+    if (activeEdgeDrag?.edgeId === edge.id && activeEdgeDrag.pointerId === event.pointerId) {
+      activeEdgeDrag = null;
+    }
+  };
+
   const trackEdge = (event: PointerEvent, edge: Edge) => {
     const path = event.currentTarget as SVGPathElement;
     const fraction = closestFraction(path, eventPoint(event, path));
     setHovered({ edge: edge.id, zone: fraction < 1 / 3 ? 0 : fraction > 2 / 3 ? 1 : 2 });
+    if (activeEdgeDrag?.edgeId === edge.id && activeEdgeDrag.pointerId === event.pointerId) {
+      event.preventDefault();
+    }
   };
 
   const cycleEdge = (edge: Edge) => {
@@ -470,7 +564,7 @@ export function Visualizer() {
           <section class="how-to">
             <h3>How to play</h3>
             <ol>
-              <li><span class="step-number">1</span><span>Click an edge near an endpoint to point it there.</span></li>
+              <li><span class="step-number">1</span><span>Click near an endpoint, or swipe along an edge, to orient it.</span></li>
               <li><span class="step-number">2</span><span>Click its middle third to remove the arrow.</span></li>
               <li><span class="step-number">3</span><span>Click a cyan vertex to apply its forced moves.</span></li>
             </ol>
@@ -546,9 +640,12 @@ export function Visualizer() {
                         d={geometry().forward}
                         tabindex="0"
                         role="button"
-                        aria-label={`${edge.id}: ${direction() === null ? "unoriented" : directionLabel(edge, direction() as 0 | 1)}. Enter cycles direction; Delete clears.`}
-                        onClick={(event) => interactWithEdge(event, edge)}
+                        aria-label={`${edge.id}: ${direction() === null ? "unoriented" : directionLabel(edge, direction() as 0 | 1)}. Swipe or drag along the edge to orient it; Enter cycles direction; Delete clears.`}
+                        onClick={(event) => clickEdge(event, edge)}
+                        onPointerDown={(event) => beginEdgeDrag(event, edge)}
                         onPointerMove={(event) => trackEdge(event, edge)}
+                        onPointerUp={(event) => finishEdgeDrag(event, edge)}
+                        onPointerCancel={(event) => cancelEdgeDrag(event, edge)}
                         onPointerLeave={() => setHovered(null)}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {

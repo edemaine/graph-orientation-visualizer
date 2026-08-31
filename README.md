@@ -9,6 +9,7 @@ The app treats an orientation problem as a game. Every edge starts unoriented. A
 Included:
 
 - endpoint-third clicks to orient or flip an edge;
+- swipe/drag gestures along an edge to orient it in the gesture direction;
 - middle-third clicks to clear an orientation;
 - local contradiction detection for partial orientations;
 - local forced-edge deductions, shown as dashed arrows;
@@ -24,6 +25,7 @@ The current deduction system is deliberately local. It filters the allowed relat
 ## Controls
 
 - Click the third of an edge nearest an endpoint to direct the edge toward that endpoint.
+- Swipe or drag along an edge to direct it in the gesture direction.
 - Click the middle third to make the edge unoriented.
 - Click a cyan vertex to apply all orientations forced by that vertex.
 - Focus an edge with the keyboard and press `Enter` or `Space` to cycle its state. Press `Delete` or `Backspace` to clear it.
