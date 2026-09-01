@@ -119,6 +119,70 @@ describe("example selection", () => {
     expect(path.getAttribute("aria-label")).toContain("toward b");
   });
 
+  it("orients an edge by dragging between vertices with mouse or touch", () => {
+    const root = document.createElement("div");
+    document.body.append(root);
+    dispose = render(() => <Visualizer />, root);
+
+    const svg = root.querySelector<SVGSVGElement>(".graph-canvas")!;
+    Object.defineProperty(svg, "getScreenCTM", {
+      configurable: true,
+      value: () => ({ inverse: () => ({}) }),
+    });
+    Object.defineProperty(svg, "createSVGPoint", {
+      configurable: true,
+      value: () => {
+        const point = {
+          x: 0,
+          y: 0,
+          matrixTransform: () => ({ x: point.x, y: point.y }),
+        };
+        return point;
+      },
+    });
+    const a = root.querySelector<SVGGElement>('[data-vertex-id="a"]')!;
+    const b = root.querySelector<SVGGElement>('[data-vertex-id="b"]')!;
+    const edge = root.querySelector<SVGPathElement>('.edge-hit[aria-label^="ab:"]')!;
+
+    const dispatchPointer = (
+      element: SVGGElement,
+      type: string,
+      x: number,
+      y: number,
+      pointerType = "mouse",
+    ) => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        clientX: x,
+        clientY: y,
+      });
+      Object.defineProperties(event, {
+        pointerId: { value: 9 },
+        isPrimary: { value: true },
+        pointerType: { value: pointerType },
+      });
+      element.dispatchEvent(event);
+    };
+
+    const touchStart = new Event("touchstart", { bubbles: true, cancelable: true });
+    a.dispatchEvent(touchStart);
+    expect(touchStart.defaultPrevented).toBe(true);
+
+    dispatchPointer(a, "pointerdown", 255, 135);
+    dispatchPointer(a, "pointermove", 545, 135);
+    expect(root.querySelector(".edge-preview--directed")).not.toBeNull();
+    dispatchPointer(a, "pointerup", 545, 135);
+    expect(edge.getAttribute("aria-label")).toContain("toward b");
+    a.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(root.querySelector(".counter")?.textContent).toContain("1 / 4 edges");
+
+    dispatchPointer(b, "pointerdown", 545, 135, "touch");
+    dispatchPointer(b, "pointerup", 255, 135, "touch");
+    expect(edge.getAttribute("aria-label")).toContain("toward a");
+  });
+
   it("uses the favicon artwork as the masthead brand mark", () => {
     const root = document.createElement("div");
     dispose = render(() => <Visualizer />, root);

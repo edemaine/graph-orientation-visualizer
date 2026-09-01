@@ -25,6 +25,8 @@ interface LabelPart { text: string; italic: boolean }
 
 const EDGE_SWIPE_MINIMUM_PIXELS = 12;
 const EDGE_SWIPE_MINIMUM_FRACTION = 0.004;
+const VERTEX_DRAG_MINIMUM_PIXELS = 12;
+const VERTEX_DROP_RADIUS = NODE_RADIUS + 18;
 
 const THEME_STORAGE_KEY = "graph-orientation-theme";
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -188,8 +190,8 @@ const edgeGeometry = (graph: GraphDefinition, edge: Edge) => {
   return { start, end, midpoint, forward, reverse };
 };
 
-const eventPoint = (event: MouseEvent | PointerEvent, path: SVGPathElement): Point => {
-  const svg = path.ownerSVGElement;
+const eventPoint = (event: MouseEvent | PointerEvent, element: SVGGraphicsElement): Point => {
+  const svg = element.ownerSVGElement;
   const matrix = svg?.getScreenCTM();
   if (!svg || !matrix) return { x: 0, y: 0 };
   const point = svg.createSVGPoint();
@@ -271,7 +273,14 @@ export function Visualizer() {
     startFraction: number;
     startPoint: Point;
   } | null = null;
+  let activeVertexDrag: {
+    vertexId: string;
+    pointerId: number;
+    element: SVGGElement;
+    startPoint: Point;
+  } | null = null;
   let suppressedEdgeClick: { edgeId: string; expires: number } | null = null;
+  let suppressedVertexClick: { vertexId: string; expires: number } | null = null;
   const usesCommandKey = platformUsesCommandKey(detectedPlatform());
   const historyModifier = usesCommandKey ? "Command" : "Ctrl";
   const [theme, setTheme] = createSignal<Theme>(initialTheme());
@@ -478,6 +487,91 @@ export function Visualizer() {
       forced.forEach((direction, edgeId) => { next[edgeId] = direction; });
       return next;
     });
+  };
+
+  const vertexDragDestination = (event: PointerEvent, fromVertexId: string) => {
+    const element = event.currentTarget as SVGGElement;
+    const point = eventPoint(event, element);
+    const target = selectedGraph().vertices
+      .filter(({ id }) => id !== fromVertexId)
+      .map((vertex) => ({
+        vertex,
+        distance: Math.hypot(vertex.x - point.x, vertex.y - point.y),
+      }))
+      .filter(({ distance }) => distance <= VERTEX_DROP_RADIUS)
+      .sort((first, second) => first.distance - second.distance)[0]?.vertex;
+    if (!target) return null;
+
+    const connecting = selectedGraph().edges.filter((edge) => {
+      const endpoints = edge.ends.map((end) => "vertex" in end ? end.vertex : null);
+      return endpoints.includes(fromVertexId) && endpoints.includes(target.id);
+    });
+    const edge = connecting.find(({ id }) => directions()[id] === null) ?? connecting[0];
+    if (!edge) return null;
+    const direction = edge.ends.findIndex((end) => "vertex" in end && end.vertex === target.id) as 0 | 1;
+    return { edge, direction };
+  };
+
+  const beginVertexDrag = (event: PointerEvent, vertex: Vertex) => {
+    if (event.button !== 0 || event.isPrimary === false) return;
+    const element = event.currentTarget as SVGGElement;
+    activeVertexDrag = {
+      vertexId: vertex.id,
+      pointerId: event.pointerId,
+      element,
+      startPoint: { x: event.clientX, y: event.clientY },
+    };
+    try {
+      element.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture is an enhancement; the gesture can still finish over the vertex.
+    }
+  };
+
+  const trackVertexDrag = (event: PointerEvent, vertex: Vertex) => {
+    const drag = activeVertexDrag;
+    if (!drag || drag.vertexId !== vertex.id || drag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    const destination = vertexDragDestination(event, vertex.id);
+    setHovered(destination ? { edge: destination.edge.id, zone: destination.direction } : null);
+  };
+
+  const finishVertexDrag = (event: PointerEvent, vertex: Vertex) => {
+    const drag = activeVertexDrag;
+    if (!drag || drag.vertexId !== vertex.id || drag.pointerId !== event.pointerId) return;
+    activeVertexDrag = null;
+    try {
+      drag.element.releasePointerCapture(event.pointerId);
+    } catch {
+      // The browser may already have released capture.
+    }
+    const destination = vertexDragDestination(event, vertex.id);
+    const moved = Math.hypot(
+      event.clientX - drag.startPoint.x,
+      event.clientY - drag.startPoint.y,
+    ) >= VERTEX_DRAG_MINIMUM_PIXELS;
+    setHovered(null);
+    if (moved) {
+      event.preventDefault();
+      suppressedVertexClick = { vertexId: vertex.id, expires: performance.now() + 750 };
+    }
+    if (destination) setEdge(destination.edge.id, destination.direction);
+  };
+
+  const cancelVertexDrag = (event: PointerEvent, vertex: Vertex) => {
+    if (activeVertexDrag?.vertexId === vertex.id && activeVertexDrag.pointerId === event.pointerId) {
+      activeVertexDrag = null;
+      setHovered(null);
+    }
+  };
+
+  const clickVertex = (vertex: Vertex) => {
+    if (suppressedVertexClick?.vertexId === vertex.id && performance.now() <= suppressedVertexClick.expires) {
+      suppressedVertexClick = null;
+      return;
+    }
+    suppressedVertexClick = null;
+    applyForcedAt(vertex);
   };
 
   const stateSummary = () => {
@@ -815,11 +909,18 @@ export function Visualizer() {
                   return (
                     <g
                       class={`vertex vertex--${analysis().state}${clickable() ? " vertex--clickable" : ""}`}
+                      data-vertex-id={vertex.id}
                       transform={`translate(${vertex.x} ${vertex.y})`}
                       role={clickable() ? "button" : undefined}
                       tabindex={clickable() ? 0 : -1}
                       aria-label={`${vertexName() ? `${vertexName()}, ` : ""}${vertex.constraint.name} vertex: ${analysis().state}. ${analysis().compatible.length} compatible local completions.`}
-                      onClick={() => applyForcedAt(vertex)}
+                      onClick={() => clickVertex(vertex)}
+                      onPointerDown={(event) => beginVertexDrag(event, vertex)}
+                      onPointerMove={(event) => trackVertexDrag(event, vertex)}
+                      onPointerUp={(event) => finishVertexDrag(event, vertex)}
+                      onPointerCancel={(event) => cancelVertexDrag(event, vertex)}
+                      on:touchstart={(event) => event.preventDefault()}
+                      on:touchmove={(event) => event.preventDefault()}
                       onKeyDown={(event) => {
                         if (clickable() && (event.key === "Enter" || event.key === " ")) {
                           event.preventDefault();
