@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
 import {
   Visualizer,
+  contradictionSummary,
   edgeSwipeDirection,
   platformUsesCommandKey,
   serializeGraphSvg,
@@ -19,6 +20,26 @@ afterEach(() => {
 });
 
 describe("example selection", () => {
+  it("distinguishes violated vertices from incomplete contradictions", () => {
+    expect(contradictionSummary(1, 0)).toBe("1 vertex is violated.");
+    expect(contradictionSummary(0, 2)).toBe("2 vertices have no possible completion.");
+    expect(contradictionSummary(1, 2)).toBe(
+      "1 vertex is violated. 2 vertices have no possible completion.",
+    );
+
+    const root = document.createElement("div");
+    document.body.append(root);
+    dispose = render(() => <Visualizer />, root);
+    const ab = root.querySelector<SVGPathElement>('.edge-hit[aria-label^="ab:"]')!;
+    const da = root.querySelector<SVGPathElement>('.edge-hit[aria-label^="da:"]')!;
+    ab.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    da.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    da.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+    expect(root.querySelector(".state-card")?.textContent).toContain("1 vertex is violated.");
+    expect(root.querySelector(".state-card")?.textContent).not.toContain("no possible completion");
+  });
+
   it("uses edge progress to resolve deliberate swipes in either direction", () => {
     expect(edgeSwipeDirection(0.4, 0.6, { x: 10, y: 10 }, { x: 30, y: 10 })).toBe(1);
     expect(edgeSwipeDirection(0.6, 0.4, { x: 30, y: 10 }, { x: 10, y: 10 })).toBe(0);

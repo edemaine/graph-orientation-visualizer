@@ -71,6 +71,17 @@ export const platformUsesCommandKey = (platform: string) => {
   return /mac|iphone|ipad|ipod/i.test(platform);
 };
 
+export const contradictionSummary = (violated: number, incomplete: number) => {
+  const messages: string[] = [];
+  if (violated > 0) {
+    messages.push(`${violated} ${violated === 1 ? "vertex is" : "vertices are"} violated.`);
+  }
+  if (incomplete > 0) {
+    messages.push(`${incomplete} ${incomplete === 1 ? "vertex has" : "vertices have"} no possible completion.`);
+  }
+  return messages.join(" ");
+};
+
 const detectedPlatform = () => {
   const userAgentData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
   return userAgentData?.platform || navigator.platform || navigator.userAgent;
@@ -337,11 +348,15 @@ export function Visualizer() {
     const values = Object.values(analyses());
     const oriented = Object.values(directions()).filter((direction) => direction !== null).length;
     const impossible = values.filter(({ state }) => state === "impossible").length;
+    const violated = values.filter(({ state, assignedPorts, totalPorts }) => {
+      return state === "impossible" && assignedPorts === totalPorts;
+    }).length;
+    const incompleteImpossible = impossible - violated;
     const satisfied = values.filter(({ state }) => state === "satisfied").length;
     const forced = values.filter(({ state }) => state === "forced").length;
     const edgeConflicts = Object.values(forcedEdges()).filter(({ conflict }) => conflict).length;
     const solved = oriented === selectedGraph().edges.length && satisfied === selectedGraph().vertices.length;
-    return { oriented, impossible, satisfied, forced, edgeConflicts, solved };
+    return { oriented, impossible, violated, incompleteImpossible, satisfied, forced, edgeConflicts, solved };
   });
 
   const directionsEqual = (first: DirectionState, second: DirectionState) => {
@@ -580,7 +595,7 @@ export function Visualizer() {
     if (current.impossible > 0) return {
       tone: "danger",
       title: "Contradiction",
-      text: `${current.impossible} ${current.impossible === 1 ? "vertex has" : "vertices have"} no possible completion.`,
+      text: contradictionSummary(current.violated, current.incompleteImpossible),
     };
     if (current.edgeConflicts > 0) return {
       tone: "danger",
