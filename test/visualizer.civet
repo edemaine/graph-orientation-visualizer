@@ -73,7 +73,7 @@ describe("example selection", () => {
       value: (length: number) => ({ x: length, y: 0 }),
     });
 
-    const dispatchPointer = (type: string, x: number) => {
+    const dispatchPointer = (type: string, x: number, pointerType = "mouse") => {
       const event = new MouseEvent(type, {
         bubbles: true,
         cancelable: true,
@@ -84,9 +84,14 @@ describe("example selection", () => {
       Object.defineProperties(event, {
         pointerId: { value: 7 },
         isPrimary: { value: true },
+        pointerType: { value: pointerType },
       });
       path.dispatchEvent(event);
     };
+
+    const touchStart = new Event("touchstart", { bubbles: true, cancelable: true });
+    path.dispatchEvent(touchStart);
+    expect(touchStart.defaultPrevented).toBe(true);
 
     dispatchPointer("pointerdown", 40);
     dispatchPointer("pointermove", 50);
@@ -108,6 +113,10 @@ describe("example selection", () => {
     dispatchPointer("pointerup", 40);
     path.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 40, clientY: 0 }));
     expect(path.getAttribute("aria-label")).toContain("toward a");
+
+    dispatchPointer("pointerdown", 90, "touch");
+    dispatchPointer("pointerup", 90, "touch");
+    expect(path.getAttribute("aria-label")).toContain("toward b");
   });
 
   it("uses the favicon artwork as the masthead brand mark", () => {

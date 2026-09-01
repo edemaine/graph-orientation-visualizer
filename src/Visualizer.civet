@@ -437,7 +437,14 @@ export function Visualizer() {
       drag.startPoint,
       { x: event.clientX, y: event.clientY },
     );
-    if (direction === null) return;
+    if (direction === null) {
+      if (event.pointerType === "touch") {
+        event.preventDefault();
+        interactWithEdge(event, edge);
+        suppressedEdgeClick = { edgeId: edge.id, expires: performance.now() + 750 };
+      }
+      return;
+    }
     event.preventDefault();
     setEdge(edge.id, direction);
     suppressedEdgeClick = { edgeId: edge.id, expires: performance.now() + 750 };
@@ -739,6 +746,8 @@ export function Visualizer() {
                         onPointerUp={(event) => finishEdgeDrag(event, edge)}
                         onPointerCancel={(event) => cancelEdgeDrag(event, edge)}
                         onPointerLeave={() => setHovered(null)}
+                        on:touchstart={(event) => event.preventDefault()}
+                        on:touchmove={(event) => event.preventDefault()}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault();
