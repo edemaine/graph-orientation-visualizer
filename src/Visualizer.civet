@@ -15,18 +15,24 @@ import {
 
 const NODE_RADIUS = 29;
 const NODE_EDGE_PADDING = NODE_RADIUS + 4;
-const EXTERNAL_EDGE_PADDING = 7;
 
 export interface Point { x: number; y: number }
 type Theme = "light" | "dark";
 type DirectionState = Record<string, EdgeDirection>;
 type DirectionUpdate = DirectionState | ((current: DirectionState) => DirectionState);
 interface LabelPart { text: string; italic: boolean }
+interface DragCandidate {
+  edge: Edge;
+  fraction: number;
+  distance: number;
+  source: "edge" | "endpoint";
+}
 
 const EDGE_SWIPE_MINIMUM_PIXELS = 12;
 const EDGE_SWIPE_MINIMUM_FRACTION = 0.004;
-const VERTEX_DRAG_MINIMUM_PIXELS = 12;
-const VERTEX_DROP_RADIUS = NODE_RADIUS + 18;
+const EDGE_HIT_RADIUS = 20;
+const ENDPOINT_DRAG_MINIMUM_PIXELS = 12;
+const ENDPOINT_DRAG_RADIUS = NODE_RADIUS + 18;
 
 const THEME_STORAGE_KEY = "graph-orientation-theme";
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -153,8 +159,8 @@ const edgeGeometry = (graph: GraphDefinition, edge: Edge) => {
         x: rawEnd.x - (lastWaypoint ?? rawStart).x,
         y: rawEnd.y - (lastWaypoint ?? rawStart).y,
       });
-  const startPadding = "vertex" in edge.ends[0] ? NODE_EDGE_PADDING : EXTERNAL_EDGE_PADDING;
-  const endPadding = "vertex" in edge.ends[1] ? NODE_EDGE_PADDING : EXTERNAL_EDGE_PADDING;
+  const startPadding = "vertex" in edge.ends[0] ? NODE_EDGE_PADDING : 0;
+  const endPadding = "vertex" in edge.ends[1] ? NODE_EDGE_PADDING : 0;
   const start = {
     x: rawStart.x + startDirection.x * startPadding,
     y: rawStart.y + startDirection.y * startPadding,
@@ -201,8 +207,11 @@ const edgeGeometry = (graph: GraphDefinition, edge: Edge) => {
   return { start, end, midpoint, forward, reverse };
 };
 
-const eventPoint = (event: MouseEvent | PointerEvent, element: SVGGraphicsElement): Point => {
-  const svg = element.ownerSVGElement;
+const eventPoint = (
+  event: MouseEvent | PointerEvent,
+  element: SVGGraphicsElement | SVGSVGElement,
+): Point => {
+  const svg = element instanceof SVGSVGElement ? element : element.ownerSVGElement;
   const matrix = svg?.getScreenCTM();
   if (!svg || !matrix) return { x: 0, y: 0 };
   const point = svg.createSVGPoint();
@@ -212,7 +221,7 @@ const eventPoint = (event: MouseEvent | PointerEvent, element: SVGGraphicsElemen
   return { x: local.x, y: local.y };
 };
 
-const closestFraction = (path: SVGPathElement, point: Point): number => {
+const closestPathLocation = (path: SVGPathElement, point: Point) => {
   const length = path.getTotalLength();
   let bestFraction = 0;
   let bestDistance = Number.POSITIVE_INFINITY;
@@ -240,7 +249,11 @@ const closestFraction = (path: SVGPathElement, point: Point): number => {
     }
     radius /= 12;
   }
-  return bestFraction;
+  return { fraction: bestFraction, distance: Math.sqrt(bestDistance) };
+};
+
+const closestFraction = (path: SVGPathElement, point: Point): number => {
+  return closestPathLocation(path, point).fraction;
 };
 
 export const edgeSwipeDirection = (
@@ -277,18 +290,12 @@ const constraintRule = (constraint: Constraint): string => {
 
 export function Visualizer() {
   let graphCanvas: SVGSVGElement | undefined;
-  let activeEdgeDrag: {
-    edgeId: string;
+  let activeDrag: {
     pointerId: number;
-    path: SVGPathElement;
-    startFraction: number;
+    startCandidates: DragCandidate[];
     startPoint: Point;
-  } | null = null;
-  let activeVertexDrag: {
-    vertexId: string;
-    pointerId: number;
-    element: SVGGElement;
-    startPoint: Point;
+    startEdgeId?: string;
+    startVertexId?: string;
   } | null = null;
   let suppressedEdgeClick: { edgeId: string; expires: number } | null = null;
   let suppressedVertexClick: { vertexId: string; expires: number } | null = null;
@@ -429,66 +436,6 @@ export function Visualizer() {
     interactWithEdge(event, edge);
   };
 
-  const beginEdgeDrag = (event: PointerEvent, edge: Edge) => {
-    if (event.button !== 0 || event.isPrimary === false) return;
-    const path = event.currentTarget as SVGPathElement;
-    activeEdgeDrag = {
-      edgeId: edge.id,
-      pointerId: event.pointerId,
-      path,
-      startFraction: closestFraction(path, eventPoint(event, path)),
-      startPoint: { x: event.clientX, y: event.clientY },
-    };
-    try {
-      path.setPointerCapture(event.pointerId);
-    } catch {
-      // Pointer capture is an enhancement; the gesture can still finish over the path.
-    }
-  };
-
-  const finishEdgeDrag = (event: PointerEvent, edge: Edge) => {
-    const drag = activeEdgeDrag;
-    if (!drag || drag.edgeId !== edge.id || drag.pointerId !== event.pointerId) return;
-    activeEdgeDrag = null;
-    try {
-      drag.path.releasePointerCapture(event.pointerId);
-    } catch {
-      // The browser may already have released capture.
-    }
-    const direction = edgeSwipeDirection(
-      drag.startFraction,
-      closestFraction(drag.path, eventPoint(event, drag.path)),
-      drag.startPoint,
-      { x: event.clientX, y: event.clientY },
-    );
-    if (direction === null) {
-      if (event.pointerType === "touch") {
-        event.preventDefault();
-        interactWithEdge(event, edge);
-        suppressedEdgeClick = { edgeId: edge.id, expires: performance.now() + 750 };
-      }
-      return;
-    }
-    event.preventDefault();
-    setEdge(edge.id, direction);
-    suppressedEdgeClick = { edgeId: edge.id, expires: performance.now() + 750 };
-  };
-
-  const cancelEdgeDrag = (event: PointerEvent, edge: Edge) => {
-    if (activeEdgeDrag?.edgeId === edge.id && activeEdgeDrag.pointerId === event.pointerId) {
-      activeEdgeDrag = null;
-    }
-  };
-
-  const trackEdge = (event: PointerEvent, edge: Edge) => {
-    const path = event.currentTarget as SVGPathElement;
-    const fraction = closestFraction(path, eventPoint(event, path));
-    setHovered({ edge: edge.id, zone: fraction < 1 / 3 ? 0 : fraction > 2 / 3 ? 1 : 2 });
-    if (activeEdgeDrag?.edgeId === edge.id && activeEdgeDrag.pointerId === event.pointerId) {
-      event.preventDefault();
-    }
-  };
-
   const cycleEdge = (edge: Edge) => {
     const current = directions()[edge.id];
     setEdge(edge.id, current === null ? 1 : current === 1 ? 0 : null);
@@ -504,80 +451,187 @@ export function Visualizer() {
     });
   };
 
-  const vertexDragDestination = (event: PointerEvent, fromVertexId: string) => {
-    const element = event.currentTarget as SVGGElement;
-    const point = eventPoint(event, element);
-    const target = selectedGraph().vertices
-      .filter(({ id }) => id !== fromVertexId)
-      .map((vertex) => ({
-        vertex,
-        distance: Math.hypot(vertex.x - point.x, vertex.y - point.y),
-      }))
-      .filter(({ distance }) => distance <= VERTEX_DROP_RADIUS)
-      .sort((first, second) => first.distance - second.distance)[0]?.vertex;
-    if (!target) return null;
-
-    const connecting = selectedGraph().edges.filter((edge) => {
-      const endpoints = edge.ends.map((end) => "vertex" in end ? end.vertex : null);
-      return endpoints.includes(fromVertexId) && endpoints.includes(target.id);
-    });
-    const edge = connecting.find(({ id }) => directions()[id] === null) ?? connecting[0];
-    if (!edge) return null;
-    const direction = edge.ends.findIndex((end) => "vertex" in end && end.vertex === target.id) as 0 | 1;
-    return { edge, direction };
+  const endpointCandidatesNear = (point: Point, allowedEdgeIds?: Set<string>) => {
+    const candidates: DragCandidate[] = [];
+    for (const edge of selectedGraph().edges) {
+      if (allowedEdgeIds && !allowedEdgeIds.has(edge.id)) continue;
+      edge.ends.forEach((end, index) => {
+        const endpoint = endpointPoint(selectedGraph(), end);
+        const distance = Math.hypot(endpoint.x - point.x, endpoint.y - point.y);
+        if (distance <= ENDPOINT_DRAG_RADIUS) {
+          candidates.push({ edge, fraction: index, distance, source: "endpoint" });
+        }
+      });
+    }
+    return candidates.sort((first, second) => first.distance - second.distance);
   };
 
-  const beginVertexDrag = (event: PointerEvent, vertex: Vertex) => {
-    if (event.button !== 0 || event.isPrimary === false) return;
-    const element = event.currentTarget as SVGGElement;
-    activeVertexDrag = {
-      vertexId: vertex.id,
+  const pathForEdge = (edgeId: string) => {
+    return graphCanvas?.querySelector<SVGPathElement>(`.edge-hit[data-edge-id="${edgeId}"]`) ?? null;
+  };
+
+  const dragCandidatesAt = (event: PointerEvent, allowedEdgeIds?: Set<string>) => {
+    if (!graphCanvas) return [];
+    const point = eventPoint(event, graphCanvas);
+    const candidates = endpointCandidatesNear(point, allowedEdgeIds);
+    const targetPath = ((event.target as Element | null)?.closest?.(".edge-hit") ?? null) as SVGPathElement | null;
+    const targetEdgeId = targetPath?.dataset.edgeId;
+    const visited = new Set<string>();
+
+    if (targetPath && targetEdgeId && (!allowedEdgeIds || allowedEdgeIds.has(targetEdgeId))) {
+      const edge = selectedGraph().edges.find(({ id }) => id === targetEdgeId);
+      if (edge) {
+        const location = closestPathLocation(targetPath, point);
+        candidates.push({ edge, ...location, source: "edge" });
+        visited.add(edge.id);
+      }
+    }
+
+    if (allowedEdgeIds) {
+      for (const edgeId of allowedEdgeIds) {
+        if (visited.has(edgeId)) continue;
+        const edge = selectedGraph().edges.find(({ id }) => id === edgeId);
+        const path = pathForEdge(edgeId);
+        if (!edge || !path || typeof path.getTotalLength !== "function") continue;
+        const location = closestPathLocation(path, point);
+        if (location.distance <= EDGE_HIT_RADIUS) {
+          candidates.push({ edge, ...location, source: "edge" });
+        }
+      }
+    }
+    return candidates;
+  };
+
+  const resolveDrag = (event: PointerEvent) => {
+    const drag = activeDrag;
+    if (!drag) return null;
+    const allowed = new Set(drag.startCandidates.map(({ edge }) => edge.id));
+    const endCandidates = dragCandidatesAt(event, allowed);
+    let best: { edge: Edge; direction: 0 | 1; score: number } | null = null;
+    for (const start of drag.startCandidates) {
+      for (const end of endCandidates) {
+        if (start.edge.id !== end.edge.id) continue;
+        const direction = edgeSwipeDirection(
+          start.fraction,
+          end.fraction,
+          drag.startPoint,
+          { x: event.clientX, y: event.clientY },
+        );
+        if (direction === null) continue;
+        const specificity = Number(start.source === "edge") + Number(end.source === "edge");
+        const unoriented = directions()[start.edge.id] === null ? 1 : 0;
+        const progress = Math.abs(end.fraction - start.fraction);
+        const score = specificity * 10000 + unoriented * 100 + progress * 10 - start.distance - end.distance;
+        if (!best || score > best.score) best = { edge: start.edge, direction, score };
+      }
+    }
+    return best;
+  };
+
+  const beginDrag = (event: PointerEvent) => {
+    if (activeDrag || event.button !== 0 || event.isPrimary === false || !graphCanvas) return;
+    const candidates = dragCandidatesAt(event);
+    const startVertex = (event.target as Element | null)?.closest?.("[data-vertex-id]") as SVGGElement | null;
+    const startVertexId = startVertex?.dataset.vertexId;
+    const filtered = startVertexId
+      ? candidates.filter(({ edge, fraction, source }) => {
+          if (source !== "endpoint") return false;
+          const end = edge.ends[fraction as 0 | 1];
+          return "vertex" in end && end.vertex === startVertexId;
+        })
+      : candidates;
+    if (filtered.length === 0) return;
+    const startPath = (event.target as Element | null)?.closest?.(".edge-hit") as SVGPathElement | null;
+    activeDrag = {
       pointerId: event.pointerId,
-      element,
+      startCandidates: filtered,
       startPoint: { x: event.clientX, y: event.clientY },
+      startEdgeId: startPath?.dataset.edgeId,
+      startVertexId,
     };
     try {
-      element.setPointerCapture(event.pointerId);
+      graphCanvas.setPointerCapture(event.pointerId);
     } catch {
-      // Pointer capture is an enhancement; the gesture can still finish over the vertex.
+      // Pointer capture is an enhancement; the gesture can still finish over the canvas.
     }
   };
 
-  const trackVertexDrag = (event: PointerEvent, vertex: Vertex) => {
-    const drag = activeVertexDrag;
-    if (!drag || drag.vertexId !== vertex.id || drag.pointerId !== event.pointerId) return;
-    event.preventDefault();
-    const destination = vertexDragDestination(event, vertex.id);
-    setHovered(destination ? { edge: destination.edge.id, zone: destination.direction } : null);
+  const trackDrag = (event: PointerEvent) => {
+    const drag = activeDrag;
+    if (drag?.pointerId === event.pointerId) {
+      event.preventDefault();
+      const resolution = resolveDrag(event);
+      setHovered(resolution ? { edge: resolution.edge.id, zone: resolution.direction } : null);
+      return;
+    }
+    const path = (event.target as Element | null)?.closest?.(".edge-hit") as SVGPathElement | null;
+    const edge = path && selectedGraph().edges.find(({ id }) => id === path.dataset.edgeId);
+    if (!path || !edge || !graphCanvas) {
+      setHovered(null);
+      return;
+    }
+    const fraction = closestFraction(path, eventPoint(event, graphCanvas));
+    setHovered({ edge: edge.id, zone: fraction < 1 / 3 ? 0 : fraction > 2 / 3 ? 1 : 2 });
   };
 
-  const finishVertexDrag = (event: PointerEvent, vertex: Vertex) => {
-    const drag = activeVertexDrag;
-    if (!drag || drag.vertexId !== vertex.id || drag.pointerId !== event.pointerId) return;
-    activeVertexDrag = null;
-    try {
-      drag.element.releasePointerCapture(event.pointerId);
-    } catch {
-      // The browser may already have released capture.
-    }
-    const destination = vertexDragDestination(event, vertex.id);
+  const finishDrag = (event: PointerEvent) => {
+    const drag = activeDrag;
+    if (!drag || drag.pointerId !== event.pointerId || !graphCanvas) return;
+    const resolution = resolveDrag(event);
     const moved = Math.hypot(
       event.clientX - drag.startPoint.x,
       event.clientY - drag.startPoint.y,
-    ) >= VERTEX_DRAG_MINIMUM_PIXELS;
+    ) >= ENDPOINT_DRAG_MINIMUM_PIXELS;
+    activeDrag = null;
+    try {
+      graphCanvas.releasePointerCapture(event.pointerId);
+    } catch {
+      // The browser may already have released capture.
+    }
     setHovered(null);
     if (moved) {
       event.preventDefault();
-      suppressedVertexClick = { vertexId: vertex.id, expires: performance.now() + 750 };
+      if (drag.startEdgeId) suppressedEdgeClick = { edgeId: drag.startEdgeId, expires: performance.now() + 750 };
+      if (drag.startVertexId) suppressedVertexClick = { vertexId: drag.startVertexId, expires: performance.now() + 750 };
+      if (resolution) setEdge(resolution.edge.id, resolution.direction);
+      return;
     }
-    if (destination) setEdge(destination.edge.id, destination.direction);
+    if (event.pointerType === "touch") {
+      event.preventDefault();
+      if (drag.startEdgeId) {
+        const candidate = drag.startCandidates.find(({ edge, source }) => {
+          return edge.id === drag.startEdgeId && source === "edge";
+        });
+        if (candidate) {
+          setEdge(candidate.edge.id, candidate.fraction < 1 / 3 ? 0 : candidate.fraction > 2 / 3 ? 1 : null);
+          suppressedEdgeClick = { edgeId: candidate.edge.id, expires: performance.now() + 750 };
+        }
+      } else if (drag.startVertexId) {
+        const vertex = selectedGraph().vertices.find(({ id }) => id === drag.startVertexId);
+        if (vertex) applyForcedAt(vertex);
+        suppressedVertexClick = { vertexId: drag.startVertexId, expires: performance.now() + 750 };
+      }
+    }
   };
 
-  const cancelVertexDrag = (event: PointerEvent, vertex: Vertex) => {
-    if (activeVertexDrag?.vertexId === vertex.id && activeVertexDrag.pointerId === event.pointerId) {
-      activeVertexDrag = null;
+  const cancelDrag = (event: PointerEvent) => {
+    if (activeDrag?.pointerId === event.pointerId) {
+      activeDrag = null;
       setHovered(null);
     }
+  };
+
+  const reserveTouchStart = (event: TouchEvent) => {
+    const touch = event.touches?.[0];
+    const nearEndpoint = touch && graphCanvas && endpointCandidatesNear(eventPoint(
+      { clientX: touch.clientX, clientY: touch.clientY } as PointerEvent,
+      graphCanvas,
+    )).length > 0;
+    if (activeDrag !== null || nearEndpoint) event.preventDefault();
+  };
+
+  const reserveActiveTouch = (event: TouchEvent) => {
+    if (activeDrag !== null) event.preventDefault();
   };
 
   const clickVertex = (vertex: Vertex) => {
@@ -789,6 +843,15 @@ export function Visualizer() {
               viewBox={(selectedGraph().viewBox ?? [0, 0, 800, 560]).join(" ")}
               role="img"
               aria-label={`Interactive graph: ${selectedGraph().title}`}
+              onPointerDown={(event) => beginDrag(event)}
+              onPointerMove={(event) => trackDrag(event)}
+              onPointerUp={(event) => finishDrag(event)}
+              onPointerCancel={(event) => cancelDrag(event)}
+              onPointerLeave={() => {
+                if (!activeDrag) setHovered(null);
+              }}
+              on:touchstart={reserveTouchStart}
+              on:touchmove={reserveActiveTouch}
             >
               <defs>
                 <!-- Arrowhead geometry from Cocreate's client/DrawApp.coffee:
@@ -845,16 +908,12 @@ export function Visualizer() {
                       </Show>
                       <path
                         class="edge-hit"
+                        data-edge-id={edge.id}
                         d={geometry().forward}
                         tabindex="0"
                         role="button"
                         aria-label={`${edge.id}: ${direction() === null ? "unoriented" : directionLabel(edge, direction() as 0 | 1)}. Swipe or drag along the edge to orient it; Enter cycles direction; Delete clears.`}
                         onClick={(event) => clickEdge(event, edge)}
-                        onPointerDown={(event) => beginEdgeDrag(event, edge)}
-                        onPointerMove={(event) => trackEdge(event, edge)}
-                        onPointerUp={(event) => finishEdgeDrag(event, edge)}
-                        onPointerCancel={(event) => cancelEdgeDrag(event, edge)}
-                        onPointerLeave={() => setHovered(null)}
                         on:touchstart={(event) => event.preventDefault()}
                         on:touchmove={(event) => event.preventDefault()}
                         onKeyDown={(event) => {
@@ -867,11 +926,6 @@ export function Visualizer() {
                           }
                         }}
                       />
-                      <For each={edge.ends}>{(end) => (
-                        <Show when={!('vertex' in end)}>
-                          <circle class="external-port" cx={(end as { x: number; y: number }).x} cy={(end as { x: number; y: number }).y} r="5" />
-                        </Show>
-                      )}</For>
                     </g>
                   );
                 }}</For>
@@ -930,10 +984,6 @@ export function Visualizer() {
                       tabindex={clickable() ? 0 : -1}
                       aria-label={`${vertexName() ? `${vertexName()}, ` : ""}${vertex.constraint.name} vertex: ${analysis().state}. ${analysis().compatible.length} compatible local completions.`}
                       onClick={() => clickVertex(vertex)}
-                      onPointerDown={(event) => beginVertexDrag(event, vertex)}
-                      onPointerMove={(event) => trackVertexDrag(event, vertex)}
-                      onPointerUp={(event) => finishVertexDrag(event, vertex)}
-                      onPointerCancel={(event) => cancelVertexDrag(event, vertex)}
                       on:touchstart={(event) => event.preventDefault()}
                       on:touchmove={(event) => event.preventDefault()}
                       onKeyDown={(event) => {

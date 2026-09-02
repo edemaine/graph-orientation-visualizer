@@ -115,8 +115,8 @@ describe("example selection", () => {
     expect(touchStart.defaultPrevented).toBe(true);
 
     dispatchPointer("pointerdown", 40);
-    dispatchPointer("pointermove", 50);
-    expect(root.querySelector(".edge-preview--undirected")).not.toBeNull();
+    dispatchPointer("pointermove", 55);
+    expect(root.querySelector(".edge-preview--directed")).not.toBeNull();
     expect(root.querySelector(".edge-hover")).toBeNull();
     dispatchPointer("pointerup", 60);
     expect(path.getAttribute("aria-label")).toContain("toward b");
@@ -140,7 +140,7 @@ describe("example selection", () => {
     expect(path.getAttribute("aria-label")).toContain("toward b");
   });
 
-  it("orients an edge by dragging between vertices with mouse or touch", () => {
+  it("orients an edge by dragging between nearby endpoints with mouse or touch", () => {
     const root = document.createElement("div");
     document.body.append(root);
     dispose = render(() => <Visualizer />, root);
@@ -164,9 +164,14 @@ describe("example selection", () => {
     const a = root.querySelector<SVGGElement>('[data-vertex-id="a"]')!;
     const b = root.querySelector<SVGGElement>('[data-vertex-id="b"]')!;
     const edge = root.querySelector<SVGPathElement>('.edge-hit[aria-label^="ab:"]')!;
+    Object.defineProperty(edge, "getTotalLength", { configurable: true, value: () => 224 });
+    Object.defineProperty(edge, "getPointAtLength", {
+      configurable: true,
+      value: (length: number) => ({ x: 288 + length, y: 135 }),
+    });
 
     const dispatchPointer = (
-      element: SVGGElement,
+      element: SVGElement,
       type: string,
       x: number,
       y: number,
@@ -202,6 +207,35 @@ describe("example selection", () => {
     dispatchPointer(b, "pointerdown", 545, 135, "touch");
     dispatchPointer(b, "pointerup", 255, 135, "touch");
     expect(edge.getAttribute("aria-label")).toContain("toward a");
+
+    dispatchPointer(a, "pointerdown", 255, 135);
+    dispatchPointer(edge, "pointerup", 450, 135);
+    expect(edge.getAttribute("aria-label")).toContain("toward b");
+
+    dispatchPointer(edge, "pointerdown", 450, 135);
+    dispatchPointer(a, "pointerup", 255, 135);
+    expect(edge.getAttribute("aria-label")).toContain("toward a");
+
+    const select = root.querySelector<HTMLSelectElement>("#example")!;
+    select.value = "synchronizer";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    const dangling = root.querySelector<SVGPathElement>('.edge-hit[aria-label^="north:"]')!;
+
+    dispatchPointer(svg, "pointerdown", 440, 280, "touch");
+    const canvasTouch = new Event("touchstart", { bubbles: true, cancelable: true });
+    Object.defineProperty(canvasTouch, "touches", {
+      value: [{ clientX: 440, clientY: 280 }],
+    });
+    svg.dispatchEvent(canvasTouch);
+    expect(canvasTouch.defaultPrevented).toBe(true);
+    dispatchPointer(svg, "pointermove", 400, 75, "touch");
+    expect(root.querySelector(".edge-preview--directed")).not.toBeNull();
+    dispatchPointer(svg, "pointerup", 400, 75, "touch");
+    expect(dangling.getAttribute("aria-label")).toContain("toward the dangling end");
+
+    dispatchPointer(svg, "pointerdown", 405, 75);
+    dispatchPointer(svg, "pointerup", 440, 280);
+    expect(dangling.getAttribute("aria-label")).toContain("toward sync");
   });
 
   it("uses the favicon artwork as the masthead brand mark", () => {
@@ -456,6 +490,7 @@ describe("example selection", () => {
     select.dispatchEvent(new Event("change", { bubbles: true }));
 
     const vertex = root.querySelector(".vertex")!;
+    const north = root.querySelector<SVGPathElement>('.edge-hit[aria-label^="north:"]')!;
     expect(vertex.querySelector(".vertex-label--single-character")?.textContent).toBe("S");
     expect(vertex.querySelectorAll(".port-pair-label--0")).toHaveLength(2);
     expect(vertex.querySelectorAll(".port-pair-label--1")).toHaveLength(2);
@@ -466,6 +501,8 @@ describe("example selection", () => {
     expect(vertex.querySelector(".vertex-shape")?.contains(body)).toBe(true);
     expect(body.compareDocumentPosition(firstPortLabel) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     expect(root.querySelector(".vertex-types")?.textContent).toContain("The + ports agree");
+    expect(root.querySelector(".external-port")).toBeNull();
+    expect(north.getAttribute("d")).toBe("M 400 247 L 400 70");
   });
 
   it("enlarges the alternator's one-character label", () => {
