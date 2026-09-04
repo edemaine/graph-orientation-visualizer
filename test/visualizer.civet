@@ -114,11 +114,18 @@ describe("example selection", () => {
     path.dispatchEvent(touchStart);
     expect(touchStart.defaultPrevented).toBe(true);
 
+    dispatchPointer("pointerdown", 75);
+    dispatchPointer("pointerup", 95);
+    expect(path.getAttribute("aria-label")).toContain("toward b");
     dispatchPointer("pointerdown", 40);
+    dispatchPointer("pointerup", 60);
+    expect(path.getAttribute("aria-label")).toContain("unoriented");
+
+    dispatchPointer("pointerdown", 20);
     dispatchPointer("pointermove", 55);
     expect(root.querySelector(".edge-preview--directed")).not.toBeNull();
     expect(root.querySelector(".edge-hover")).toBeNull();
-    dispatchPointer("pointerup", 60);
+    dispatchPointer("pointerup", 80);
     expect(path.getAttribute("aria-label")).toContain("toward b");
     path.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 60, clientY: 0 }));
     expect(path.getAttribute("aria-label")).toContain("toward b");
@@ -129,10 +136,10 @@ describe("example selection", () => {
     expect(preview.getAttribute("marker-end")).toBe("url(#preview-arrow)");
     expect(preview.getAttribute("d")).toBe(path.getAttribute("d"));
 
-    dispatchPointer("pointerdown", 60);
+    dispatchPointer("pointerdown", 80);
     dispatchPointer("pointermove", 50);
-    dispatchPointer("pointerup", 40);
-    path.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 40, clientY: 0 }));
+    dispatchPointer("pointerup", 20);
+    path.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 20, clientY: 0 }));
     expect(path.getAttribute("aria-label")).toContain("toward a");
 
     dispatchPointer("pointerdown", 90, "touch");
@@ -203,6 +210,10 @@ describe("example selection", () => {
     expect(edge.getAttribute("aria-label")).toContain("toward b");
     a.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(root.querySelector(".counter")?.textContent).toContain("1 / 4 edges");
+
+    dispatchPointer(b, "pointerdown", 545, 135);
+    dispatchPointer(b, "pointerup", 520, 135);
+    expect(root.querySelector(".counter")?.textContent).toContain("2 / 4 edges");
 
     dispatchPointer(b, "pointerdown", 545, 135, "touch");
     dispatchPointer(b, "pointerup", 255, 135, "touch");

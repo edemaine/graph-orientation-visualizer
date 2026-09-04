@@ -256,6 +256,10 @@ const closestFraction = (path: SVGPathElement, point: Point): number => {
   return closestPathLocation(path, point).fraction;
 };
 
+const edgeZone = (fraction: number): 0 | 1 | 2 => {
+  return fraction < 1 / 3 ? 0 : fraction > 2 / 3 ? 1 : 2;
+};
+
 export const edgeSwipeDirection = (
   startFraction: number,
   endFraction: number,
@@ -528,6 +532,34 @@ export function Visualizer() {
     return best;
   };
 
+  const resolveSameEdgeZone = (event: PointerEvent) => {
+    const drag = activeDrag;
+    if (!drag) return null;
+    const allowed = new Set(drag.startCandidates.map(({ edge }) => edge.id));
+    const endCandidates = dragCandidatesAt(event, allowed);
+    let best: { edge: Edge; zone: 0 | 1 | 2; score: number } | null = null;
+    for (const start of drag.startCandidates) {
+      if (drag.startEdgeId && start.edge.id !== drag.startEdgeId) continue;
+      for (const end of endCandidates) {
+        if (start.edge.id !== end.edge.id) continue;
+        const zone = edgeZone(start.fraction);
+        if (zone !== edgeZone(end.fraction)) continue;
+        const specificity = Number(start.source === "edge") + Number(end.source === "edge");
+        const score = specificity * 10000 - start.distance - end.distance;
+        if (!best || score > best.score) best = { edge: start.edge, zone, score };
+      }
+    }
+    return best;
+  };
+
+  const endsNearStartVertex = (event: PointerEvent) => {
+    const vertexId = activeDrag?.startVertexId;
+    const vertex = vertexId && selectedGraph().vertices.find(({ id }) => id === vertexId);
+    if (!vertex || !graphCanvas) return false;
+    const point = eventPoint(event, graphCanvas);
+    return Math.hypot(vertex.x - point.x, vertex.y - point.y) <= ENDPOINT_DRAG_RADIUS;
+  };
+
   const beginDrag = (event: PointerEvent) => {
     if (activeDrag || event.button !== 0 || event.isPrimary === false || !graphCanvas) return;
     const candidates = dragCandidatesAt(event);
@@ -560,6 +592,15 @@ export function Visualizer() {
     const drag = activeDrag;
     if (drag?.pointerId === event.pointerId) {
       event.preventDefault();
+      if (endsNearStartVertex(event)) {
+        setHovered(null);
+        return;
+      }
+      const sameZone = resolveSameEdgeZone(event);
+      if (sameZone) {
+        setHovered({ edge: sameZone.edge.id, zone: sameZone.zone });
+        return;
+      }
       const resolution = resolveDrag(event);
       setHovered(resolution ? { edge: resolution.edge.id, zone: resolution.direction } : null);
       return;
@@ -571,12 +612,14 @@ export function Visualizer() {
       return;
     }
     const fraction = closestFraction(path, eventPoint(event, graphCanvas));
-    setHovered({ edge: edge.id, zone: fraction < 1 / 3 ? 0 : fraction > 2 / 3 ? 1 : 2 });
+    setHovered({ edge: edge.id, zone: edgeZone(fraction) });
   };
 
   const finishDrag = (event: PointerEvent) => {
     const drag = activeDrag;
     if (!drag || drag.pointerId !== event.pointerId || !graphCanvas) return;
+    const sameVertex = endsNearStartVertex(event);
+    const sameZone = sameVertex ? null : resolveSameEdgeZone(event);
     const resolution = resolveDrag(event);
     const moved = Math.hypot(
       event.clientX - drag.startPoint.x,
@@ -589,6 +632,22 @@ export function Visualizer() {
       // The browser may already have released capture.
     }
     setHovered(null);
+    if (sameVertex) {
+      event.preventDefault();
+      const vertex = selectedGraph().vertices.find(({ id }) => id === drag.startVertexId);
+      if (vertex) applyForcedAt(vertex);
+      if (drag.startVertexId) {
+        suppressedVertexClick = { vertexId: drag.startVertexId, expires: performance.now() + 750 };
+      }
+      return;
+    }
+    if (sameZone) {
+      event.preventDefault();
+      if (drag.startEdgeId) suppressedEdgeClick = { edgeId: drag.startEdgeId, expires: performance.now() + 750 };
+      if (drag.startVertexId) suppressedVertexClick = { vertexId: drag.startVertexId, expires: performance.now() + 750 };
+      setEdge(sameZone.edge.id, sameZone.zone === 2 ? null : sameZone.zone);
+      return;
+    }
     if (moved) {
       event.preventDefault();
       if (drag.startEdgeId) suppressedEdgeClick = { edgeId: drag.startEdgeId, expires: performance.now() + 750 };
@@ -596,21 +655,20 @@ export function Visualizer() {
       if (resolution) setEdge(resolution.edge.id, resolution.direction);
       return;
     }
-    if (event.pointerType === "touch") {
-      event.preventDefault();
-      if (drag.startEdgeId) {
-        const candidate = drag.startCandidates.find(({ edge, source }) => {
-          return edge.id === drag.startEdgeId && source === "edge";
-        });
-        if (candidate) {
-          setEdge(candidate.edge.id, candidate.fraction < 1 / 3 ? 0 : candidate.fraction > 2 / 3 ? 1 : null);
-          suppressedEdgeClick = { edgeId: candidate.edge.id, expires: performance.now() + 750 };
-        }
-      } else if (drag.startVertexId) {
-        const vertex = selectedGraph().vertices.find(({ id }) => id === drag.startVertexId);
-        if (vertex) applyForcedAt(vertex);
-        suppressedVertexClick = { vertexId: drag.startVertexId, expires: performance.now() + 750 };
+    event.preventDefault();
+    if (drag.startEdgeId) {
+      const candidate = drag.startCandidates.find(({ edge, source }) => {
+        return edge.id === drag.startEdgeId && source === "edge";
+      });
+      if (candidate) {
+        const zone = edgeZone(candidate.fraction);
+        setEdge(candidate.edge.id, zone === 2 ? null : zone);
+        suppressedEdgeClick = { edgeId: candidate.edge.id, expires: performance.now() + 750 };
       }
+    } else if (drag.startVertexId) {
+      const vertex = selectedGraph().vertices.find(({ id }) => id === drag.startVertexId);
+      if (vertex) applyForcedAt(vertex);
+      suppressedVertexClick = { vertexId: drag.startVertexId, expires: performance.now() + 750 };
     }
   };
 
