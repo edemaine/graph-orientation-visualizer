@@ -377,6 +377,32 @@ describe("example selection", () => {
     expect(status.compareDocumentPosition(howTo) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
   });
 
+  it("applies one round of forced vertices as a single history action", () => {
+    const root = document.createElement("div");
+    document.body.append(root);
+    dispose = render(() => <Visualizer />, root);
+
+    const edge = (id: string) => {
+      return root.querySelector<SVGPathElement>(`.edge-hit[data-edge-id="${id}"]`)!;
+    };
+    edge("ab").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+    const apply = root.querySelector<HTMLButtonElement>(".state-card__apply")!;
+    expect(apply.textContent).toContain("Apply all forced edges");
+    expect(root.querySelector(".state-card")?.textContent).toContain("2 forced vertices");
+
+    apply.click();
+
+    expect(edge("bc").getAttribute("aria-label")).toContain("toward c");
+    expect(edge("da").getAttribute("aria-label")).toContain("toward a");
+    expect(edge("cd").getAttribute("aria-label")).toContain("unoriented");
+    expect(root.querySelector(".state-card")?.textContent).toContain("2 forced vertices");
+
+    root.querySelector<HTMLButtonElement>('[aria-label="Undo orientation change"]')!.click();
+    expect(edge("bc").getAttribute("aria-label")).toContain("unoriented");
+    expect(edge("da").getAttribute("aria-label")).toContain("unoriented");
+  });
+
   it("groups edge visuals before their interaction target for the focus glow", () => {
     const root = document.createElement("div");
     dispose = render(() => <Visualizer />, root);

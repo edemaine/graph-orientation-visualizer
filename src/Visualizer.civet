@@ -455,6 +455,19 @@ export function Visualizer() {
     });
   };
 
+  const applyAllForced = () => {
+    const currentAnalyses = analyses();
+    commitDirections((current) => {
+      const next = { ...current };
+      for (const vertex of selectedGraph().vertices) {
+        const analysis = currentAnalyses[vertex.id];
+        if (analysis.state !== "forced") continue;
+        analysis.forced.forEach((direction, edgeId) => { next[edgeId] = direction; });
+      }
+      return next;
+    });
+  };
+
   const endpointCandidatesNear = (point: Point, allowedEdgeIds?: Set<string>) => {
     const candidates: DragCandidate[] = [];
     for (const edge of selectedGraph().edges) {
@@ -877,6 +890,11 @@ export function Visualizer() {
               <strong>{stateSummary().title}</strong>
               <p>{stateSummary().text}</p>
             </div>
+            <Show when={progress().forced > 0 && progress().impossible === 0 && progress().edgeConflicts === 0}>
+              <button class="state-card__apply" type="button" onClick={applyAllForced}>
+                Apply all forced edges
+              </button>
+            </Show>
           </section>
 
           <section class="how-to">

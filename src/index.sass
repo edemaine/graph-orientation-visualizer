@@ -307,6 +307,28 @@ option
     font-size: 19px
     font-weight: 800
 
+  &__apply
+    grid-column: 1 / -1
+    width: 100%
+    padding: 8px 12px
+    border: 1px solid rgb(var(--cyan) / .5)
+    border-radius: 8px
+    color: rgb(var(--ink))
+    background: rgb(var(--cyan) / .12)
+    cursor: pointer
+    font-size: 12px
+    font-weight: 750
+    transition: border-color .18s ease, background .18s ease, transform .18s ease
+
+    &:hover
+      border-color: rgb(var(--cyan))
+      background: rgb(var(--cyan) / .2)
+      transform: translateY(-1px)
+
+    &:focus-visible
+      outline: 3px solid rgb(var(--cyan) / .25)
+      outline-offset: 2px
+
   &--success
     border-color: rgb(var(--green) / .35)
     background: rgb(var(--green) / .08)
